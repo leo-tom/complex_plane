@@ -1,0 +1,12 @@
+
+This is simple library to express complex plane in Rust.
+To compile it, do
+
+cd complex_plane
+cargo build
+
+
+You can ask me anything to my twitter account @Charcoal_gone
+
+Enjoy!
+
