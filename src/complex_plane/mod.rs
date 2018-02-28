@@ -12,24 +12,40 @@ use std::iter::Iterator;
 
 
 #[allow(dead_code)]
-pub struct Plane<T: num_traits::ToPrimitive + num_traits::Num + num_traits::NumOps + Copy + PartialOrd> {
+pub struct Plane<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + PartialOrd> {
     from: Complex<T>,
     to: Complex<T>,
     buff: image::RgbImage,
 }
 #[allow(dead_code)]
-impl<T: num_traits::ToPrimitive + num_traits::Num + num_traits::NumOps + Copy + PartialOrd>
+impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + PartialOrd>
     Plane<T> {
     pub fn new(z1: &Complex<T>, z2: &Complex<T>, w: u32, h: u32) -> Plane<T> {
         Plane {
             buff: ImageBuffer::new(w, h),
             from: Complex::new(
-                if z1.re < z2.re { z1.re } else { z2.re },
-                if z1.im < z2.im { z1.im } else { z2.im },
+                if z1.re < z2.re {
+                    z1.re.clone()
+                } else {
+                    z2.re.clone()
+                },
+                if z1.im < z2.im {
+                    z1.im.clone()
+                } else {
+                    z2.im.clone()
+                },
             ),
             to: Complex::new(
-                if z1.re > z2.re { z1.re } else { z2.im },
-                if z1.im > z2.im { z1.im } else { z2.im },
+                if z1.re > z2.re {
+                    z1.re.clone()
+                } else {
+                    z2.im.clone()
+                },
+                if z1.im > z2.im {
+                    z1.im.clone()
+                } else {
+                    z2.im.clone()
+                },
             ),
         }
     }
@@ -56,10 +72,16 @@ impl<T: num_traits::ToPrimitive + num_traits::Num + num_traits::NumOps + Copy + 
                 (0xff & rgb) as u8,
             ],
         };
-        let x = (p.re - self.from.re).to_f64().unwrap();
-        let y = (p.im - self.from.im).to_f64().unwrap();
-        let x_zoom = self.buff.width() as f64 / (self.to.re - self.from.re).to_f64().unwrap();
-        let y_zoom = self.buff.height() as f64 / (self.to.im - self.from.im).to_f64().unwrap();
+        let x = (p.re - self.from.re.clone()).to_f64().unwrap();
+        let y = (p.im - self.from.im.clone()).to_f64().unwrap();
+        let x_zoom = self.buff.width() as f64 /
+            (self.to.re.clone() - self.from.re.clone())
+                .to_f64()
+                .unwrap();
+        let y_zoom = self.buff.height() as f64 /
+            (self.to.im.clone() - self.from.im.clone())
+                .to_f64()
+                .unwrap();
 
         let x = (x * x_zoom) as u32;
         let y = self.height() - (y * y_zoom) as u32;
@@ -78,8 +100,12 @@ impl<T: num_traits::ToPrimitive + num_traits::Num + num_traits::NumOps + Copy + 
         let c = Complex::new(c.re.to_f64().unwrap(), c.im.to_f64().unwrap());
         for x in (0..self.width()).collect::<Vec<u32>>() {
             for y in (0..self.height()).collect::<Vec<u32>>() {
-                let x_zoom = (self.to.re - self.from.re).to_f64().unwrap() / self.width() as f64;
-                let y_zoom = (self.to.im - self.from.im).to_f64().unwrap() / self.height() as f64;
+                let x_zoom = (self.to.re.clone() - self.from.re.clone())
+                    .to_f64()
+                    .unwrap() / self.width() as f64;
+                let y_zoom = (self.to.im.clone() - self.from.im.clone())
+                    .to_f64()
+                    .unwrap() / self.height() as f64;
                 let mut z = Complex::new((x as f64) * x_zoom, (y as f64) * y_zoom);
                 let mut val = 0 as u8;
                 for n in 0..255 {

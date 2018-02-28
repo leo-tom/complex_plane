@@ -21,11 +21,13 @@ mod tests {
             let path = Path::new("out.png");
             f.save(&path);
         });
+        handler1.join().unwrap();
         */
 
-        //handler1.join().unwrap();
-        let parsed = ComplexNode::parse("2+x*42/2").expect("FUCK");
+        let formula = "(1+2)*2";
+        let parsed = ComplexNode::<f64>::parse(formula).expect("FUCK");
         println!("{}", parsed);
+        println!("{} == {}", formula, parsed.calculate());
     }
 
 }
