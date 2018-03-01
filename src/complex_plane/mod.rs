@@ -55,16 +55,16 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
     pub fn height(&self) -> u32 {
         self.buff.height()
     }
-    pub fn put_dot(&mut self, p: Complex<T>) {
+    pub fn put_dot(&mut self, p: &Complex<T>) {
         let rgb = 0xffffff as u32;
         self.put_pixel(p, rgb);
     }
-    pub fn put_dots(&mut self, v: Vec<Complex<T>>) {
+    pub fn put_dots(&mut self, v: &Vec<Complex<T>>) {
         for z in v {
             self.put_dot(z);
         }
     }
-    pub fn put_pixel(&mut self, p: Complex<T>, rgb: u32) {
+    pub fn put_pixel(&mut self, p: &Complex<T>, rgb: u32) {
         let color = image::Rgb {
             data: [
                 (0xff & (rgb >> 16)) as u8,
@@ -72,8 +72,8 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                 (0xff & rgb) as u8,
             ],
         };
-        let x = (p.re - self.from.re.clone()).to_f64().unwrap();
-        let y = (p.im - self.from.im.clone()).to_f64().unwrap();
+        let x = (p.re.clone() - self.from.re.clone()).to_f64().unwrap();
+        let y = (p.im.clone() - self.from.im.clone()).to_f64().unwrap();
         let x_zoom = self.buff.width() as f64 /
             (self.to.re.clone() - self.from.re.clone())
                 .to_f64()
@@ -91,9 +91,9 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             self.buff.put_pixel(x, y, color);
         }
     }
-    pub fn put_pixels(&mut self, v: Vec<(Complex<T>, u32)>) {
-        for (z, rgb) in v {
-            self.put_pixel(z, rgb);
+    pub fn put_pixels(&mut self, v: &Vec<(Complex<T>, u32)>) {
+        for &(ref z, ref rgb) in v {
+            self.put_pixel(z, *rgb);
         }
     }
     pub fn draw_fractal(&mut self, c: Complex<T>) {

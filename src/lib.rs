@@ -1,13 +1,26 @@
+
 extern crate num_complex;
+
 pub mod complex_plane;
 pub mod complex_func;
+
+
+
+
 #[cfg(test)]
+
 mod tests {
     use complex_plane::Plane;
     use complex_func::ComplexNode;
     use num_complex::Complex;
     use std::path::Path;
     use std::thread;
+
+    use std::time::{Duration, SystemTime};
+
+
+
+
     #[test]
     fn it_works() {
 
@@ -24,10 +37,27 @@ mod tests {
         handler1.join().unwrap();
         */
 
-        let formula = "(1+2)*2";
+        let formula = "((1+2)*(2+32))-421/4+(4+2)/2";
+        let start_parse = SystemTime::now();
         let parsed = ComplexNode::<f64>::parse(formula).expect("FUCK");
-        println!("{}", parsed);
-        println!("{} == {}", formula, parsed.calculate());
+        match start_parse.elapsed() {
+            Ok(x) => {
+                println!(
+                    "Parsing took: {}ns,{}s",
+                    x.subsec_nanos(),
+                    ((x.subsec_nanos() as f64) / 1000000000.0)
+                )
+            }
+            _ => panic!("FUCK"), 
+        }
+        //println!("{}", parsed);
+        let calculated = parsed.const_calculate();
+        let start_calculation = SystemTime::now();
+        match start_calculation.elapsed() {
+            Ok(x) => println!("Calculating took : {}ns", x.subsec_nanos()),
+            _ => panic!("FUCK"),
+        }
+        println!("{} == {}", formula, calculated);
     }
 
 }

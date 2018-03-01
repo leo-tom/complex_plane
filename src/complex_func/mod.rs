@@ -3,11 +3,14 @@ extern crate regex;
 extern crate num_traits;
 extern crate num;
 
+pub mod complex_definition;
 
 use self::regex::Regex;
 use std::fmt;
 use complex_plane::Plane;
+use complex_func::complex_definition::ComplexDefinition;
 use num_complex::Complex;
+
 
 #[derive(Debug)]
 enum ComplexNodeType<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
@@ -23,6 +26,53 @@ pub struct ComplexNode<T: num::traits::Num + num_traits::ToPrimitive + num_trait
     t: ComplexNodeType<T>,
     left: Option<Box<ComplexNode<T>>>,
     right: Option<Box<ComplexNode<T>>>,
+}
+impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> Clone
+    for ComplexNode<T> {
+    fn clone(&self) -> Self {
+        let t: ComplexNodeType<T> = match self.t {
+            ComplexNodeType::Scalar(ref x) => ComplexNodeType::Scalar(x.clone()),
+            ComplexNodeType::String(ref x) => ComplexNodeType::String(x.clone()),
+            ComplexNodeType::Add => ComplexNodeType::Add,
+            ComplexNodeType::Sub => ComplexNodeType::Sub,
+            ComplexNodeType::Mul => ComplexNodeType::Mul,
+            ComplexNodeType::Div => ComplexNodeType::Div,
+        };
+        let left: Option<Box<ComplexNode<T>>> = match self.left {
+            Some(ref x) => Some(x.clone()),
+            _ => None,
+        };
+        let right: Option<Box<ComplexNode<T>>> = match self.right {
+            Some(ref x) => Some(x.clone()),
+            _ => None,
+        };
+        ComplexNode {
+            t: t,
+            left: left,
+            right: right,
+        }
+    }
+}
+
+impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone>
+    ComplexNode<T> {
+    pub fn is_const(&self) -> bool {
+        if let ComplexNodeType::String(_) = self.t {
+            return false;
+        }
+        let left = match self.left {
+            Some(ref x) => x.is_const(),
+            _ => true,
+        };
+        if !left {
+            return false;
+        }
+        let right = match self.right {
+            Some(ref x) => x.is_const(),
+            _ => true,
+        };
+        return right;
+    }
 }
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone>
     ComplexNode<T> {
@@ -68,9 +118,19 @@ fn print<T: num::traits::Num + num_traits::ToPrimitive+ num_traits::FromPrimitiv
 }
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone>
     ComplexNode<T> {
-    pub fn calculate(&self) -> T {
+    fn _const_calculate(&self) -> T {
+        self.calculate(&ComplexDefinition::new())
+    }
+    pub fn const_calculate(&self) -> T {
+        if self.is_const() {
+            self._const_calculate()
+        } else {
+            panic!("This is not constant formula!!");
+        }
+    }
+    pub fn calculate(&self, definition: &ComplexDefinition<T>) -> T {
         let left = match self.left {
-            Some(ref x) => x.calculate(),
+            Some(ref x) => x.calculate(definition),
             _ => {
                 match T::from_str_radix("0", 0) {
                     Ok(y) => y,
@@ -79,7 +139,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             }
         };
         let right = match self.right {
-            Some(ref x) => x.calculate(),
+            Some(ref x) => x.calculate(definition),
             _ => {
                 match T::from_str_radix("0", 0) {
                     Ok(y) => y,
@@ -197,15 +257,28 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
     fn brakets(s: &str) -> Option<Box<ComplexNode<T>>> {
         let regex = Regex::new(r"\(.*\)").unwrap();
         if regex.is_match(s) {
-            let string = regex.find(s).unwrap().as_str();
-            let v: Vec<&str> = regex.splitn(s, 2).collect();
-            if s == string {
-                return Self::brakets(s.trim_left_matches('(').trim_right_matches(')'));
+            let splited: Vec<&str> = s.splitn(2, '(').collect();
+            let mut counter = 1;
+            let mut index = 0;
+            let mut center = String::new();
+            for c in splited[1].chars() {
+                index += 1;
+                if c == '(' {
+                    counter += 1;
+                } else if c == ')' {
+                    counter -= 1;
+                }
+                center.push(c);
+                if counter <= 0 {
+                    center.pop();
+                    break;
+                }
             }
-            println!("{} {:?}", string, v);
-            let left = ComplexNode::<T>::parse(v[0]);
-            let right = ComplexNode::<T>::parse(v[1]);
-            let center = ComplexNode::<T>::parse(string);
+            let left = splited[0];
+            let (_, right) = splited[1].split_at(index);
+            let left = ComplexNode::<T>::parse(left);
+            let right = ComplexNode::<T>::parse(right);
+            let center = ComplexNode::<T>::parse(center.as_str());
 
             if left.is_some() && right.is_some() {
                 let mut right = right.unwrap();
@@ -260,7 +333,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         if s.is_empty() {
             return None;
         }
-        println!("parsing... {}", s);
+        //println!("parsing... {}", s);
         match ComplexNode::brakets(s) {
             x @ Some(_) => return x,
             None => (),
