@@ -1,3 +1,19 @@
+/*
+Copyright (C) <2018>  <Leo Reo Tomura>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>
+*/
 extern crate image;
 extern crate num_complex;
 extern crate num;
@@ -54,6 +70,9 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
     }
     pub fn height(&self) -> u32 {
         self.buff.height()
+    }
+    pub fn get_range(&self) -> (Complex<T>, Complex<T>) {
+        (self.from.clone(), self.to.clone())
     }
     pub fn put_dot(&mut self, p: &Complex<T>) {
         let rgb = 0xffffff as u32;

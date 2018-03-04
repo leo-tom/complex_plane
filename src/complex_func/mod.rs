@@ -1,3 +1,19 @@
+/*
+Copyright (C) <2018>  <Leo Reo Tomura>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>
+*/
 extern crate num_complex;
 extern crate regex;
 extern crate num_traits;
@@ -10,22 +26,35 @@ use std::fmt;
 use complex_plane::Plane;
 use complex_func::complex_definition::ComplexDefinition;
 use num_complex::Complex;
+use std::vec::IntoIter;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum ComplexNodeType<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
     Add,
     Sub,
     Mul,
     Div,
-    Scalar(T),
+    Pow,
+    Scalar(Complex<T>),
     String(String),
+    Vector(Vec<ComplexNode<T>>),
 }
 #[derive(Debug)]
 pub struct ComplexNode<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
     t: ComplexNodeType<T>,
     left: Option<Box<ComplexNode<T>>>,
     right: Option<Box<ComplexNode<T>>>,
+}
+impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> Default
+    for ComplexNode<T> {
+    fn default() -> Self {
+        ComplexNode {
+            t: ComplexNodeType::Scalar(Complex::new(T::zero(), T::one())),
+            left: None,
+            right: None,
+        }
+    }
 }
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> Clone
     for ComplexNode<T> {
@@ -37,6 +66,8 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             ComplexNodeType::Sub => ComplexNodeType::Sub,
             ComplexNodeType::Mul => ComplexNodeType::Mul,
             ComplexNodeType::Div => ComplexNodeType::Div,
+            ComplexNodeType::Pow => ComplexNodeType::Pow,
+            ComplexNodeType::Vector(ref x) => ComplexNodeType::Vector(x.clone()),
         };
         let left: Option<Box<ComplexNode<T>>> = match self.left {
             Some(ref x) => Some(x.clone()),
@@ -56,6 +87,25 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
 
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone>
     ComplexNode<T> {
+    pub fn fromc(c: &Complex<T>) -> Self {
+        ComplexNode {
+            t: ComplexNodeType::Scalar(c.clone()),
+            left: None,
+            right: None,
+        }
+    }
+    pub fn is_vec(&self) -> bool {
+        match self.t {
+            ComplexNodeType::Vector(_) => true,
+            _ => false,
+        }
+    }
+    pub fn get_vec(&self) -> Vec<ComplexNode<T>> {
+        match self.t {
+            ComplexNodeType::Vector(ref v) => v.clone(),
+            _ => vec![self.clone()],
+        }
+    }
     pub fn is_const(&self) -> bool {
         if let ComplexNodeType::String(_) = self.t {
             return false;
@@ -82,8 +132,16 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             ComplexNodeType::Sub => String::from("Sub"),
             ComplexNodeType::Mul => String::from("Mul"),
             ComplexNodeType::Div => String::from("Div"),
-            ComplexNodeType::Scalar(ref x) => x.to_f64().unwrap().to_string(),
+            ComplexNodeType::Pow => String::from("Pow"),
+            ComplexNodeType::Scalar(ref x) => x.re.to_f64().unwrap().to_string(),
             ComplexNodeType::String(ref x) => x.clone(),
+            ComplexNodeType::Vector(ref x) => {
+                let mut s = String::new();
+                for v in x {
+                    s.push_str(&v.to_string());
+                }
+                s
+            }
         }
     }
 }
@@ -118,43 +176,67 @@ fn print<T: num::traits::Num + num_traits::ToPrimitive+ num_traits::FromPrimitiv
 }
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone>
     ComplexNode<T> {
-    fn _const_calculate(&self) -> T {
+    fn _const_calculate(&self) -> Complex<T> {
         self.calculate(&ComplexDefinition::new())
     }
-    pub fn const_calculate(&self) -> T {
+    pub fn const_calculate(&self) -> Complex<T> {
         if self.is_const() {
             self._const_calculate()
         } else {
             panic!("This is not constant formula!!");
         }
     }
-    pub fn calculate(&self, definition: &ComplexDefinition<T>) -> T {
-        let left = match self.left {
-            Some(ref x) => x.calculate(definition),
-            _ => {
-                match T::from_str_radix("0", 0) {
-                    Ok(y) => y,
-                    _ => T::zero(),
-                }
-            }
-        };
-        let right = match self.right {
-            Some(ref x) => x.calculate(definition),
-            _ => {
-                match T::from_str_radix("0", 0) {
-                    Ok(y) => y,
-                    _ => T::zero(),
-                }
-            }
-        };
+    pub fn calculate(&self, definition: &ComplexDefinition<T>) -> Complex<T> {
         match self.t {
-            ComplexNodeType::Add => left + right,
-            ComplexNodeType::Sub => left - right,
-            ComplexNodeType::Mul => left * right,
-            ComplexNodeType::Div => left / right,
             ComplexNodeType::Scalar(ref x) => x.clone(),
-            _ => T::zero(),
+            ComplexNodeType::Vector(ref x) => x[x.len() - 1].calculate(definition),
+            ComplexNodeType::String(ref x) => {
+                if definition.is_function(x) {
+                    match self.right {
+                        Some(ref right) => definition.call(x, right),
+                        _ => {
+                            /*call without argument*/
+                            definition.call(
+                                x,
+                                &ComplexNode {
+                                    t: ComplexNodeType::Add,
+                                    right: None,
+                                    left: None,
+                                },
+                            )
+                        }
+                    }
+                } else {
+                    definition.get(x)
+                }
+            }
+            _ => {
+                let left = match self.left {
+                    Some(ref x) => x.calculate(definition),
+                    _ => Complex::<T>::from(T::zero()),
+                };
+                let right = match self.right {
+                    Some(ref x) => x.calculate(definition),
+                    _ => Complex::from(T::zero()),
+                };
+                match self.t {
+                    ComplexNodeType::Add => left + right,
+                    ComplexNodeType::Sub => left - right,
+                    ComplexNodeType::Mul => left * right,
+                    ComplexNodeType::Div => left / right,
+                    ComplexNodeType::Pow => {
+                        let left =
+                            Complex::new(left.re.to_f64().unwrap(), left.im.to_f64().unwrap());
+                        let right =
+                            Complex::new(right.re.to_f64().unwrap(), right.im.to_f64().unwrap());
+                        let ans = left.powc(right);
+                        Complex::new(T::from_f64(ans.re).unwrap(), T::from_f64(ans.im).unwrap())
+                    }
+                    _ => panic!("This code is impossible"),
+                }
+            }
         }
+
     }
     fn get_left(&self) -> &Self {
         match self.left {
@@ -219,6 +301,14 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                 right: ComplexNode::parse(v[1]),
             }));
         }
+        let v: Vec<&str> = s.splitn(2, '^').collect();
+        if v.len() > 1 {
+            return Option::Some(Box::new(ComplexNode {
+                t: ComplexNodeType::Pow,
+                left: ComplexNode::parse(v[0]),
+                right: ComplexNode::parse(v[1]),
+            }));
+        }
         return Option::None;
     }
     fn letters(s: &str) -> Option<Box<ComplexNode<T>>> {
@@ -241,19 +331,32 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             let string: &str = regex.find(s).unwrap().as_str();
             let v: Vec<&str> = regex.splitn(s, 2).collect();
             return Option::Some(Box::new(ComplexNode {
-                t: ComplexNodeType::Scalar(
+                t: ComplexNodeType::Scalar(Complex::from(
                     T::from_f64(string.parse::<f64>().expect(
                         "Failed to parse numeric value",
                     )).unwrap(),
-                ),
+                )),
                 left: ComplexNode::parse(v[0]),
                 right: ComplexNode::parse(v[1]),
             }));
         };
         return Option::None;
     }
-
-
+    fn vector(s: &str) -> Option<Box<ComplexNode<T>>> {
+        if s.find(',').is_some() {
+            let mut v: Vec<ComplexNode<T>> = Vec::new();
+            let splited: Vec<&str> = s.split(',').collect();
+            for piece in splited {
+                v.push(*ComplexNode::<T>::parse(piece).unwrap());
+            }
+            return Some(Box::new(ComplexNode {
+                t: ComplexNodeType::Vector(v),
+                left: None,
+                right: None,
+            }));
+        }
+        return None;
+    }
     fn brakets(s: &str) -> Option<Box<ComplexNode<T>>> {
         let regex = Regex::new(r"\(.*\)").unwrap();
         if regex.is_match(s) {
@@ -278,7 +381,10 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             let (_, right) = splited[1].split_at(index);
             let left = ComplexNode::<T>::parse(left);
             let right = ComplexNode::<T>::parse(right);
-            let center = ComplexNode::<T>::parse(center.as_str());
+            let center = match Self::vector(center.as_str()) {
+                Some(x) => Some(x),
+                _ => ComplexNode::<T>::parse(center.as_str()),
+            };
 
             if left.is_some() && right.is_some() {
                 let mut right = right.unwrap();
@@ -333,7 +439,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         if s.is_empty() {
             return None;
         }
-        //println!("parsing... {}", s);
+        println!("parsing... {}", s);
         match ComplexNode::brakets(s) {
             x @ Some(_) => return x,
             None => (),

@@ -1,4 +1,19 @@
+/*
+Copyright (C) <2018>  <Leo Reo Tomura>
 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>
+*/
 extern crate num_complex;
 
 pub mod complex_plane;
@@ -15,14 +30,15 @@ mod tests {
     use num_complex::Complex;
     use std::path::Path;
     use std::thread;
+    use complex_func::complex_definition::ComplexDefinition;
 
     use std::time::{Duration, SystemTime};
 
 
 
 
-    #[test]
-    fn it_works() {
+    //#[test]
+    fn bench_test() {
 
         /*
         let handler1 = thread::spawn(|| {
@@ -59,5 +75,17 @@ mod tests {
         }
         println!("{} == {}", formula, calculated);
     }
-
+    #[test]
+    fn it_works() {
+        let def = ComplexDefinition::default();
+        let formula = "exp(2)";
+        println!("{:?}", def);
+        println!(
+            "{} == {}",
+            formula,
+            ComplexNode::<f64>::parse(formula)
+                .expect("FUCK")
+                .calculate(&def)
+        );
+    }
 }
