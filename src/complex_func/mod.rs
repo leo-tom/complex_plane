@@ -87,7 +87,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
 
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone>
     ComplexNode<T> {
-    pub fn fromc(c: &Complex<T>) -> Self {
+    pub fn fromc(c: Complex<T>) -> Self {
         ComplexNode {
             t: ComplexNodeType::Scalar(c.clone()),
             left: None,
@@ -126,7 +126,10 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
 }
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone>
     ComplexNode<T> {
-    fn to_string(&self) -> String {
+    pub fn to_string(&self) -> String {
+        self.get_name()
+    }
+    pub fn get_name(&self) -> String {
         match self.t {
             ComplexNodeType::Add => String::from("Add"),
             ComplexNodeType::Sub => String::from("Sub"),
@@ -188,8 +191,18 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
     }
     pub fn calculate(&self, definition: &ComplexDefinition<T>) -> Complex<T> {
         match self.t {
-            ComplexNodeType::Scalar(ref x) => x.clone(),
-            ComplexNodeType::Vector(ref x) => x[x.len() - 1].calculate(definition),
+            ComplexNodeType::Scalar(ref x) => {
+                let left = match self.left {
+                    Some(ref y) => y.calculate(definition),
+                    _ => Complex::new(T::one(), T::zero()),
+                };
+                let right = match self.right {
+                    Some(ref y) => y.calculate(definition),
+                    _ => Complex::new(T::one(), T::zero()),
+                };
+                left * x.clone() * right
+            }
+            ComplexNodeType::Vector(ref x) => x[0].calculate(definition),
             ComplexNodeType::String(ref x) => {
                 if definition.is_function(x) {
                     match self.right {
@@ -207,7 +220,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                         }
                     }
                 } else {
-                    definition.get(x)
+                    definition.get(x).calculate(&definition)
                 }
             }
             _ => {
@@ -403,7 +416,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                 if lr_level > rl_level {
                     // left*(center)+right
                     left.append_right(*center.unwrap());
-                    right.append_right(*left);
+                    right.append_left(*left);
                     return Some(right);
                 } else if lr_level < rl_level {
                     // left+(center)*right
@@ -439,7 +452,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         if s.is_empty() {
             return None;
         }
-        println!("parsing... {}", s);
+        //println!("parsing... {}", s);
         match ComplexNode::brakets(s) {
             x @ Some(_) => return x,
             None => (),

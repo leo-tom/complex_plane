@@ -31,13 +31,14 @@ mod tests {
     use std::path::Path;
     use std::thread;
     use complex_func::complex_definition::ComplexDefinition;
+    use std::f64::consts::PI;
 
     use std::time::{Duration, SystemTime};
 
 
 
 
-    //#[test]
+    #[test]
     fn bench_test() {
 
         /*
@@ -52,8 +53,19 @@ mod tests {
         });
         handler1.join().unwrap();
         */
-
-        let formula = "((1+2)*(2+32))-421/4+(4+2)/2";
+        let formula = "abs(3+i)";
+        let start_parse_def = SystemTime::now();
+        let def = ComplexDefinition::default();
+        match start_parse_def.elapsed() {
+            Ok(x) => {
+                println!(
+                    "Parsing def took: {}ns,{}s",
+                    x.subsec_nanos(),
+                    ((x.subsec_nanos() as f64) / 1000000000.0)
+                )
+            }
+            _ => panic!("FUCK"), 
+        }
         let start_parse = SystemTime::now();
         let parsed = ComplexNode::<f64>::parse(formula).expect("FUCK");
         match start_parse.elapsed() {
@@ -66,26 +78,27 @@ mod tests {
             }
             _ => panic!("FUCK"), 
         }
-        //println!("{}", parsed);
-        let calculated = parsed.const_calculate();
         let start_calculation = SystemTime::now();
+        let calculated = parsed.calculate(&def);
         match start_calculation.elapsed() {
-            Ok(x) => println!("Calculating took : {}ns", x.subsec_nanos()),
+            Ok(x) => {
+                println!(
+                    "Calculating took : {}ns,{}s",
+                    x.subsec_nanos(),
+                    ((x.subsec_nanos() as f64) / 1000000000.0)
+                )
+            }
             _ => panic!("FUCK"),
         }
         println!("{} == {}", formula, calculated);
-    }
-    #[test]
-    fn it_works() {
-        let def = ComplexDefinition::default();
-        let formula = "exp(2)";
-        println!("{:?}", def);
-        println!(
-            "{} == {}",
-            formula,
-            ComplexNode::<f64>::parse(formula)
-                .expect("FUCK")
-                .calculate(&def)
+        let mut p = Plane::new(
+            &Complex::new(0.0, 0.0),
+            &Complex::new(2.0 * PI, 0.0),
+            500,
+            500,
         );
+        let mapped = p.map(*ComplexNode::<f64>::parse("exp(x*i)").unwrap(), def, "x");
+        let path = Path::new("out.png");
+        mapped.save(path);
     }
 }
