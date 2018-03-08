@@ -23,13 +23,47 @@ pub mod complex_definition;
 
 use self::regex::Regex;
 use std::fmt;
-use complex_plane::Plane;
 use complex_func::complex_definition::ComplexDefinition;
 use num_complex::Complex;
-use std::vec::IntoIter;
+use std::error::Error;
+#[derive(Debug)]
+pub enum CalculationError {
+    ValueNotDefined(String),
+    Unknown(String),
+}
+#[derive(Debug)]
+pub enum ParseError {
+    Unknown(String),
+}
+impl fmt::Display for CalculationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &CalculationError::ValueNotDefined(ref s) => {
+                write!(f, "{} is not defined as function/value", s)
+            }
+            &CalculationError::Unknown(ref s) => write!(f, "CalculationError : {}", s),
+        }
 
+    }
+}
+impl Error for CalculationError {
+    fn description(&self) -> &str {
+        "CalculationError"
+    }
+}
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &ParseError::Unknown(ref s) => write!(f, "{}", s),
+        }
 
-#[derive(Debug, Clone)]
+    }
+}
+impl Error for ParseError {
+    fn description(&self) -> &str {
+        "ParseError"
+    }
+}
 enum ComplexNodeType<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
     Add,
     Sub,
@@ -40,7 +74,6 @@ enum ComplexNodeType<T: num::traits::Num + num_traits::ToPrimitive + num_traits:
     String(String),
     Vector(Vec<ComplexNode<T>>),
 }
-#[derive(Debug)]
 pub struct ComplexNode<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
     t: ComplexNodeType<T>,
     left: Option<Box<ComplexNode<T>>>,
@@ -50,7 +83,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
     for ComplexNode<T> {
     fn default() -> Self {
         ComplexNode {
-            t: ComplexNodeType::Scalar(Complex::new(T::zero(), T::one())),
+            t: ComplexNodeType::Scalar(Complex::new(T::zero(), T::zero())),
             left: None,
             right: None,
         }
@@ -152,7 +185,8 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
     for ComplexNode<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
-fn print<T: num::traits::Num + num_traits::ToPrimitive+ num_traits::FromPrimitive+ Clone>(n: &ComplexNode<T>, s: &mut String, depth: u32){
+		fn print<T: num::traits::Num + num_traits::ToPrimitive+ num_traits::FromPrimitive+ Clone>
+(n: &ComplexNode<T>, s: &mut String, depth: u32){
             let pushed_string = n.to_string();
             s.push_str(pushed_string.as_str());
             if let Some(ref x) = n.right {
@@ -179,28 +213,21 @@ fn print<T: num::traits::Num + num_traits::ToPrimitive+ num_traits::FromPrimitiv
 }
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone>
     ComplexNode<T> {
-    fn _const_calculate(&self) -> Complex<T> {
-        self.calculate(&ComplexDefinition::new())
-    }
-    pub fn const_calculate(&self) -> Complex<T> {
-        if self.is_const() {
-            self._const_calculate()
-        } else {
-            panic!("This is not constant formula!!");
-        }
-    }
-    pub fn calculate(&self, definition: &ComplexDefinition<T>) -> Complex<T> {
+    pub fn calculate(
+        &self,
+        definition: &ComplexDefinition<T>,
+    ) -> Result<Complex<T>, CalculationError> {
         match self.t {
             ComplexNodeType::Scalar(ref x) => {
                 let left = match self.left {
-                    Some(ref y) => y.calculate(definition),
+                    Some(ref y) => y.calculate(definition)?,
                     _ => Complex::new(T::one(), T::zero()),
                 };
                 let right = match self.right {
-                    Some(ref y) => y.calculate(definition),
+                    Some(ref y) => y.calculate(definition)?,
                     _ => Complex::new(T::one(), T::zero()),
                 };
-                left * x.clone() * right
+                Ok(left * x.clone() * right)
             }
             ComplexNodeType::Vector(ref x) => x[0].calculate(definition),
             ComplexNodeType::String(ref x) => {
@@ -220,32 +247,38 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                         }
                     }
                 } else {
-                    definition.get(x).calculate(&definition)
+                    definition.get(x)?.calculate(&definition)
                 }
             }
             _ => {
                 let left = match self.left {
-                    Some(ref x) => x.calculate(definition),
+                    Some(ref x) => x.calculate(definition)?,
                     _ => Complex::<T>::from(T::zero()),
                 };
                 let right = match self.right {
-                    Some(ref x) => x.calculate(definition),
+                    Some(ref x) => x.calculate(definition)?,
                     _ => Complex::from(T::zero()),
                 };
                 match self.t {
-                    ComplexNodeType::Add => left + right,
-                    ComplexNodeType::Sub => left - right,
-                    ComplexNodeType::Mul => left * right,
-                    ComplexNodeType::Div => left / right,
+                    ComplexNodeType::Add => Ok(left + right),
+                    ComplexNodeType::Sub => Ok(left - right),
+                    ComplexNodeType::Mul => Ok(left * right),
+                    ComplexNodeType::Div => Ok(left / right),
                     ComplexNodeType::Pow => {
                         let left =
                             Complex::new(left.re.to_f64().unwrap(), left.im.to_f64().unwrap());
                         let right =
                             Complex::new(right.re.to_f64().unwrap(), right.im.to_f64().unwrap());
                         let ans = left.powc(right);
-                        Complex::new(T::from_f64(ans.re).unwrap(), T::from_f64(ans.im).unwrap())
+                        let ans = Complex::new(
+                            T::from_f64(ans.re).unwrap(),
+                            T::from_f64(ans.im).unwrap(),
+                        );
+                        Ok(ans)
                     }
-                    _ => panic!("This code is impossible"),
+                    _ => Err(CalculationError::Unknown(
+                        "You should not be seeing me. Report it!".to_owned(),
+                    )),
                 }
             }
         }

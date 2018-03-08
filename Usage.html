@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Simple Complex Processing Library</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body>
+<h1>Simple Complex Processing Library</h1>
+<h2>What it is</h2>
+<p>
+SCPL(Simple Complex Processing Library) is a library written in Rust to express complex plane, and to calculate formulas
+which has complex numbers inside. It uses num_complex::Complex to express Complex number. So, write "extern crate num_complex;"
+inside of your code when you use it. Write "use num_complex::Complex;", if you are lazy person as I am.
+</p>
+<h2>Structs</h2>
+<p>
+All of structs defined in this library has generics "T". They all requires
+<pre>
+num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + PartialOrd
+</pre>
+Primitive types such as f64 and i64 satisfy these.
+</p>
+<h3>ComplexNode</h3>
+<p>
+The struct complex_func::ComplexNode is used to Express formula on complex field. It has following methods.
+
+<table border=1>
+<tr>
+	<td>fromc(c: Complex&lt;T&gt;) -> Self</td>
+	<td>Makes new ComplexNode from num_complex::Complex<T></td>
+</tr>
+<tr>
+	<td>parse(s: &str) -> Option&lt;Box&lt;ComplexNode&lt;T&gt;&gt;&gt;</td>
+	<td>Parses given string slice and returns new ComplexNode wraped with Option and Box. Returns Option::None
+		 when parse failed. Read more at <a href="#Error_types">Error type</a> section.	
+	</td>
+</tr>
+<tr>
+	<td>calculate(&self, definition: &ComplexDefinition&lt;T&gt;) -> Result&lt;Complex&lt;T&gt;, CalculationError&gt</td>
+	<td>Calculate itself with given ComplexDefinition.</td>
+</tr>
+<tr>
+	<td>to_string(&self) -> String</td>
+	<td>Returns String express itself</td>
+</tr>
+<tr>
+	<td>get_name(&self) -> String</td>
+	<td>Returns String express itself</td>
+</tr>
+</table>
+</p>
+<p>
+This struct implements following traits.
+<table border=1>
+<tr>
+	<td>std::default::Default</td>
+	<td>default() -> Self</td>
+	<td>Returns ComplexNode that returns 0+0i when method calculate is called.</td>
+</tr>
+<tr>
+	<td>std::clone::Clone</td>
+	<td>clone(&self) -> Self</td>
+	<td>Clones node.</td>
+</tr>
+<tr>
+	<td>std::fmt::Display</td>
+	<td>fmt(&self, f: &mut Formatter) -> Result</td>
+	<td>Returns std::fmt::Result which shows you how formula is parsed. Used for debugging.</td>
+</tr>
+</table>
+</p>
+<div id="Error_types">
+<h2>Error types</h2>
+<p>
+This library has its own error types. They all implements std::error::Error.
+<table border=1>
+	<tr>
+		<td>CalculationError</td>
+		<td>This is made when calculation failed.</td>
+	</tr>
+	<tr>
+		<td>ParseError</td>
+		<td>For now, this library never uses this error type. It is because ComplexNode::parse never fails. 
+			Even if you give it weird &str like ":)" or "\(^O^)/ < Pizza is great!" ,
+			it simply returns Option::None or new ComplexNode which returns weird value when it is calculated.		
+		</td>
+	</tr>
+</table>
+</p>
+</div>
+</body>
+</html> 

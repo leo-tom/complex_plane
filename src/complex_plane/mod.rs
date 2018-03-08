@@ -27,19 +27,19 @@ use self::image::ImageBuffer;
 use std::u32;
 use std::path::Path;
 use std::iter::Iterator;
-
+use complex_func::CalculationError;
 
 #[allow(dead_code)]
-pub struct Plane<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + PartialOrd> {
+pub struct ComplexPlane<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + PartialOrd> {
     from: Complex<T>,
     to: Complex<T>,
-    buff: image::RgbImage,
+    buff: image::RgbaImage,
 }
 #[allow(dead_code)]
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + PartialOrd>
-    Plane<T> {
-    pub fn new(z1: &Complex<T>, z2: &Complex<T>, w: u32, h: u32) -> Plane<T> {
-        Plane {
+    ComplexPlane<T> {
+    pub fn new(z1: &Complex<T>, z2: &Complex<T>, w: u32, h: u32) -> ComplexPlane<T> {
+        ComplexPlane {
             buff: ImageBuffer::new(w, h),
             from: Complex::new(
                 if z1.re < z2.re {
@@ -92,7 +92,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         (self.from.clone(), self.to.clone())
     }
     pub fn put_dot(&mut self, p: &Complex<T>) {
-        let rgb = 0xffffff as u32;
+        let rgb = 0x000000ff as u32;
         self.put_pixel(p, rgb);
     }
     pub fn put_dots(&mut self, v: &Vec<Complex<T>>) {
@@ -100,12 +100,13 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             self.put_dot(z);
         }
     }
-    pub fn put_pixel(&mut self, p: &Complex<T>, rgb: u32) {
-        let color = image::Rgb {
+    pub fn put_pixel(&mut self, p: &Complex<T>, rgba: u32) {
+        let color = image::Rgba {
             data: [
-                (0xff & (rgb >> 16)) as u8,
-                (0xff & (rgb >> 8)) as u8,
-                (0xff & rgb) as u8,
+                (0xff & (rgba >> 24)) as u8,
+                (0xff & (rgba >> 16)) as u8,
+                (0xff & (rgba >> 8)) as u8,
+                (0xff & rgba) as u8,
             ],
         };
         let x = (p.re.clone() - self.from.re.clone()).to_f64().unwrap();
@@ -131,7 +132,47 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             self.put_pixel(z, *rgb);
         }
     }
-    pub fn map(&self, n: ComplexNode<T>, mut def: ComplexDefinition<T>, vari: &str) -> Self {
+    pub fn map_to(
+        &self,
+        mut plane: Self,
+        n: ComplexNode<T>,
+        mut def: ComplexDefinition<T>,
+        vari: &str,
+    ) -> Result<Self, CalculationError> {
+        let x_zoom = 1.0 / self.x_zoom_factor();
+        let y_zoom = 1.0 / self.y_zoom_factor();
+        let from = Complex::new(
+            self.from.re.to_f64().unwrap(),
+            self.from.im.to_f64().unwrap(),
+        );
+        def.define_numeric(
+            vari,
+            ComplexNode::fromc(Complex::new(
+                T::from_f64(0.0 * x_zoom + from.re).unwrap(),
+                T::from_f64(0.0 * y_zoom + from.im).unwrap(),
+            )),
+        );
+        for x in 0..self.width() {
+            for y in 0..self.height() {
+                let real = (x as f64) * x_zoom + from.re;
+                let imag = (y as f64) * y_zoom + from.im;
+                let node = ComplexNode::fromc(Complex::new(
+                    T::from_f64(real).unwrap(),
+                    T::from_f64(imag).unwrap(),
+                ));
+                def.define_numeric(vari, node);
+                let new = n.calculate(&def)?;
+                plane.put_dot(&new);
+            }
+        }
+        Ok(plane)
+    }
+    pub fn map(
+        &self,
+        n: ComplexNode<T>,
+        mut def: ComplexDefinition<T>,
+        vari: &str,
+    ) -> Result<Self, CalculationError> {
         let mut vec = Vec::<Complex<T>>::new();
         let x_zoom = 1.0 / self.x_zoom_factor();
         let y_zoom = 1.0 / self.y_zoom_factor();
@@ -146,7 +187,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                 T::from_f64(0.0 * y_zoom + from.im).unwrap(),
             )),
         );
-        let mut min = n.calculate(&def);
+        let mut min = n.calculate(&def)?;
         let mut max = min.clone();
         let buff = ImageBuffer::new(self.width(), self.height());
         for x in 0..self.width() {
@@ -158,16 +199,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                     T::from_f64(imag).unwrap(),
                 ));
                 def.define_numeric(vari, node);
-                let new = n.calculate(&def);
-                println!(
-                    "(x_zoom,y_zoom) == ({},{})\nexp({}+{}i) == {} {}",
-                    x_zoom,
-                    y_zoom,
-                    real,
-                    imag,
-                    new.re.to_f64().unwrap(),
-                    new.im.to_f64().unwrap()
-                );
+                let new = n.calculate(&def)?;
                 vec.push(new.clone());
                 if new.re > max.re {
                     max.re = new.re.clone();
@@ -182,20 +214,13 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
 
             }
         }
-        let mut plane = Plane {
+        let mut plane = ComplexPlane {
             from: min.clone(),
             to: max.clone(),
             buff: buff,
         };
-        println!(
-            "[{} {},{} {}]",
-            min.re.to_f64().unwrap(),
-            min.im.to_f64().unwrap(),
-            max.re.to_f64().unwrap(),
-            max.im.to_f64().unwrap()
-        );
         plane.put_dots(&vec);
-        plane
+        Ok(plane)
     }
     pub fn draw_fractal(&mut self, c: Complex<T>) {
         let c = Complex::new(c.re.to_f64().unwrap(), c.im.to_f64().unwrap());
@@ -217,7 +242,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                     z = z * z + c;
                 }
                 let y = self.height() - y - 1;
-                let color = image::Rgb { data: [val, 0, 0] };
+                let color = image::Rgba { data: [val, 0, 0, val] };
                 self.buff.put_pixel(x, y, color);
             }
         }

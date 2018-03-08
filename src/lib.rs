@@ -25,7 +25,7 @@ pub mod complex_func;
 #[cfg(test)]
 
 mod tests {
-    use complex_plane::Plane;
+    use complex_plane::ComplexPlane;
     use complex_func::ComplexNode;
     use num_complex::Complex;
     use std::path::Path;
@@ -33,27 +33,24 @@ mod tests {
     use complex_func::complex_definition::ComplexDefinition;
     use std::f64::consts::PI;
 
-    use std::time::{Duration, SystemTime};
+    use std::error::Error;
+    use std::time::SystemTime;
 
 
-
+    //#[test]
+    fn plane_test() {
+        let z1 = Complex::new(0.0, 0.0);
+        let z2 = Complex::new(0.4, 0.4);
+        let c = Complex::new(-0.4051234123, 0.60124312);
+        let mut f = ComplexPlane::new(&z1, &z2, 500, 500);
+        f.draw_fractal(c);
+        let path = Path::new("out.png");
+        f.save(&path);
+    }
 
     #[test]
-    fn bench_test() {
-
-        /*
-        let handler1 = thread::spawn(|| {
-            let z1 = Complex::new(0.0, 0.0);
-            let z2 = Complex::new(0.4, 0.4);
-            let c = Complex::new(-0.4051234123, 0.60124312);
-            let mut f = Plane::new(&z1, &z2, 100, 100);
-            f.draw_fractal(c);
-            let path = Path::new("out.png");
-            f.save(&path);
-        });
-        handler1.join().unwrap();
-        */
-        let formula = "abs(3+i)";
+    fn func_test() {
+        let formula = "real(3+i)";
         let start_parse_def = SystemTime::now();
         let def = ComplexDefinition::default();
         match start_parse_def.elapsed() {
@@ -64,7 +61,7 @@ mod tests {
                     ((x.subsec_nanos() as f64) / 1000000000.0)
                 )
             }
-            _ => panic!("FUCK"), 
+            _ => panic!("WHAT"), 
         }
         let start_parse = SystemTime::now();
         let parsed = ComplexNode::<f64>::parse(formula).expect("FUCK");
@@ -76,10 +73,14 @@ mod tests {
                     ((x.subsec_nanos() as f64) / 1000000000.0)
                 )
             }
-            _ => panic!("FUCK"), 
+            _ => panic!("WHAT"), 
         }
         let start_calculation = SystemTime::now();
-        let calculated = parsed.calculate(&def);
+        let calculated = match parsed.calculate(&def) {
+            Ok(v) => v,
+            Err(e) => panic!("Error : {}", e),	
+        };
+
         match start_calculation.elapsed() {
             Ok(x) => {
                 println!(
@@ -88,16 +89,36 @@ mod tests {
                     ((x.subsec_nanos() as f64) / 1000000000.0)
                 )
             }
-            _ => panic!("FUCK"),
+            _ => panic!("WHAT"),
         }
         println!("{} == {}", formula, calculated);
-        let mut p = Plane::new(
+        let start_drawing = SystemTime::now();
+        let from = ComplexPlane::new(
             &Complex::new(0.0, 0.0),
             &Complex::new(2.0 * PI, 0.0),
-            500,
-            500,
+            800,
+            800,
         );
-        let mapped = p.map(*ComplexNode::<f64>::parse("exp(x*i)").unwrap(), def, "x");
+        let to = ComplexPlane::new(&Complex::new(-1.0, -1.0), &Complex::new(1.0, 1.0), 400, 400);
+        let mapped = match from.map_to(
+            to,
+            *ComplexNode::<f64>::parse("exp(x*i)").unwrap(),
+            def,
+            "x",
+        ) {
+            Ok(v) => v,
+            Err(e) => panic!("{} : {}", e.description(), e),	
+        };
+        match start_drawing.elapsed() {
+            Ok(x) => {
+                println!(
+                    "Drawing took : {}ns,{}s",
+                    x.subsec_nanos(),
+                    ((x.subsec_nanos() as f64) / 1000000000.0)
+                )
+            }
+            _ => panic!("WHAT"),
+        }
         let path = Path::new("out.png");
         mapped.save(path);
     }

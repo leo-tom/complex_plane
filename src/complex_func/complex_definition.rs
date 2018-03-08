@@ -22,22 +22,36 @@ extern crate num_traits;
 extern crate num;
 
 use std::collections::HashMap;
-use complex_plane::Plane;
 use complex_func::ComplexNode;
 use num_complex::Complex;
-use std::collections::hash_map::Keys;
 use std::fmt;
 use std::iter::FromIterator;
 use std::f64::consts;
+use complex_func::CalculationError;
+use std::sync::Arc;
 
-#[derive(Debug, Clone)]
+//#[derive(Clone)]
 enum ComplexValue<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
-    // vecter of arguments , definition
+    // (vecter of name of arguments , definition of function as formula)
     Func(ComplexNode<T>, ComplexNode<T>),
+    NaitiveFunc(
+        Arc<
+            Fn(ComplexNode<T>, ComplexDefinition<T>) -> Result<Complex<T>, CalculationError>
+                + 'static,
+        >
+    ),
     Value(ComplexNode<T>),
 }
-
-#[derive(Debug)]
+impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> Clone
+    for ComplexValue<T> {
+    fn clone(&self) -> Self {
+        match self {
+            &ComplexValue::NaitiveFunc(ref f) => ComplexValue::NaitiveFunc(f.clone()),
+            &ComplexValue::Func(ref x, ref y) => ComplexValue::Func(x.clone(), y.clone()),
+            &ComplexValue::Value(ref x) => ComplexValue::Value(x.clone()),
+        }
+    }
+}
 pub struct ComplexDefinition<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
     map: HashMap<String, ComplexValue<T>>,
 }
@@ -53,6 +67,16 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             ComplexValue::Value(value),
         );
     }
+    pub fn define_naitive_function(
+        &mut self,
+        name: &str,
+        f: Arc<Fn(ComplexNode<T>, ComplexDefinition<T>) -> Result<Complex<T>, CalculationError>>,
+    ) {
+        self.map.insert(
+            name.to_owned(),
+            ComplexValue::NaitiveFunc(f),
+        );
+    }
     pub fn define_function(&mut self, name: &str, var_def: ComplexNode<T>, def: ComplexNode<T>) {
         self.map.insert(
             String::from(name),
@@ -63,32 +87,25 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         self.map.extend(definitions.map.into_iter());
     }
     pub fn define(&mut self, name: &str, def: &str) {
-        let new_var_def = ComplexNode::<T>::parse(name);
-        let new_def = ComplexNode::<T>::parse(def);
-        match new_var_def {
-            Some(x) => {
-                let right = x.right.clone();
-                match right {
-                    Some(arg) => {
-                        let fname = x.get_name();
-                        self.map.insert(
-                            fname,
-                            ComplexValue::Func(
-                                *arg,
-                                *new_def.expect(&format!("Failed to parse content of {}.", name)),
-                            ),
-                        );
-                    }
-                    _ => {
-                        if x.is_const() {
-                            self.map.insert(String::from(name), ComplexValue::Value(*x));
-                        } else {
-                            self.map.insert(String::from(name), ComplexValue::Value(*x));
-                        }
-                    }
-                }
+        let parsed_name =
+            ComplexNode::<T>::parse(name).expect(&format!("Failed to parse {}.", name));
+        let parsed_def = ComplexNode::<T>::parse(def).expect(&format!(
+            "Failed to parse content of {} : {}",
+            name,
+            def
+        ));
+        let right = parsed_name.right.clone();
+        let fname = parsed_name.get_name();
+        match right {
+            Some(arg) => {
+                self.map.insert(
+                    fname,
+                    ComplexValue::Func(*arg, *parsed_def),
+                );
             }
-            _ => panic!("Failed to parse {}", name),
+            _ => {
+                self.map.insert(fname, ComplexValue::Value(*parsed_def));
+            }
         }
     }
     pub fn remove(&mut self, name: &str) {
@@ -97,15 +114,24 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
     pub fn contains(&self, name: &str) -> bool {
         self.map.contains_key(name)
     }
-    pub fn get(&self, name: &str) -> ComplexNode<T> {
+    pub fn get(&self, name: &str) -> Result<ComplexNode<T>, CalculationError> {
         match self.map.get(name) {
             Some(x) => {
                 match x {
-                    &ComplexValue::Value(ref v) => v.clone(),
-                    &ComplexValue::Func(_, ref f) => f.clone(),
+                    &ComplexValue::Value(ref v) => Ok(v.clone()),
+                    &ComplexValue::Func(_, ref f) => Ok(f.clone()),
+                    &ComplexValue::NaitiveFunc(_) => {
+                        Err(CalculationError::Unknown(
+                            format!(
+                                "You can not get {}. Because it is built-in function or value.",
+                                name
+                            ).to_owned(),
+                        ))
+                    }
+
                 }
             }
-            None => panic!("No definition for {}", name),
+            None => Err(CalculationError::ValueNotDefined(name.to_owned())),
         }
     }
     pub fn is_variable(&self, name: &str) -> bool {
@@ -122,14 +148,18 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
     pub fn is_function(&self, name: &str) -> bool {
         !self.is_variable(name)
     }
-    pub fn call(&self, name: &str, arguments: &ComplexNode<T>) -> Complex<T> {
+    pub fn call(
+        &self,
+        name: &str,
+        arguments: &ComplexNode<T>,
+    ) -> Result<Complex<T>, CalculationError> {
         match self.map.get(name) {
             Some(x) => {
                 match x {
                     &ComplexValue::Value(ref v) => v.calculate(self),
                     &ComplexValue::Func(ref def_arg, ref f) => {
-                        if name == "real" {
-                            return Complex::new(arguments.calculate(self).re, T::zero());
+                        if name == "REAL" {
+                            return Ok(Complex::new(arguments.calculate(self)?.re, T::zero()));
                         }
                         let mut def = self.clone();
                         let vecter = arguments.get_vec();
@@ -137,16 +167,17 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                         for name in def_arg.get_vec() {
                             def.define_numeric(
                                 &name.to_string(),
-                                ComplexNode::fromc(vecter[index].calculate(self)),
+                                ComplexNode::fromc(vecter[index].calculate(self)?),
                             );
 
                             index += 1;
                         }
                         f.calculate(&def)
                     }
+                    &ComplexValue::NaitiveFunc(ref f) => f(arguments.clone(), self.clone()),
                 }
             }
-            _ => panic!(format!("{} is not defined", name)),
+            _ => Err(CalculationError::ValueNotDefined(name.to_owned())),
         }
     }
     pub fn get_keys(&self) -> Vec<&str> {
@@ -179,6 +210,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                     match x {
                         &ComplexValue::Func(_, ref f) => result.push_str(&format!("{}", f)),
                         &ComplexValue::Value(ref v) => result.push_str(&format!("{}", v)),
+                        &ComplexValue::NaitiveFunc(_) => result.push_str("###NAITIVE CODE###"),
                     }
                 }
                 _ => (),
@@ -209,7 +241,8 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         );
         let vec: Vec<(String, ComplexValue<T>)> = vec![_1, _2, _3];
         let mut def = ComplexDefinition { map: HashMap::<String, ComplexValue<T>>::from_iter(vec) };
-        def.define("real(x)", "real(x)");
+        def.define("REAL(x)", "REAL(x)");
+        def.define("real(x)", "REAL(x)");
         def.define("exp(x)", "e^x");
         def.define("cos(x)", "(1/2)*(exp(i*x)+exp(-i*x))");
         def.define("sin(x)", "(1/2i)*(exp(i*x)-exp(-i*x))");
