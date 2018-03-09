@@ -24,6 +24,7 @@ use self::num_complex::Complex;
 use complex_func::ComplexNode;
 use complex_func::complex_definition::ComplexDefinition;
 use self::image::ImageBuffer;
+use self::image::Rgba;
 use std::u32;
 use std::path::Path;
 use std::iter::Iterator;
@@ -33,7 +34,7 @@ use complex_func::CalculationError;
 pub struct ComplexPlane<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + PartialOrd> {
     from: Complex<T>,
     to: Complex<T>,
-    buff: image::RgbaImage,
+    buff: ImageBuffer<image::Rgba<u8>, Vec<u8>>,
 }
 #[allow(dead_code)]
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + PartialOrd>
@@ -88,6 +89,20 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             .unwrap();
         height / range
     }
+    fn get_coordinate(&self, z: &Complex<T>) -> (u32, u32) {
+        let x = (z.re.clone() - self.from.re.clone()).to_f64().unwrap();
+        let y = (z.im.clone() - self.from.im.clone()).to_f64().unwrap();
+        let x_zoom = self.x_zoom_factor();
+        let y_zoom = self.y_zoom_factor();
+
+        let x = (x * x_zoom) as u32;
+        let y = if self.height() >= (y * y_zoom) as u32 {
+            self.height() - (y * y_zoom) as u32
+        } else {
+            0
+        };
+        (x, y)
+    }
     pub fn get_range(&self) -> (Complex<T>, Complex<T>) {
         (self.from.clone(), self.to.clone())
     }
@@ -101,7 +116,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         }
     }
     pub fn put_pixel(&mut self, p: &Complex<T>, rgba: u32) {
-        let color = image::Rgba {
+        let color = Rgba {
             data: [
                 (0xff & (rgba >> 24)) as u8,
                 (0xff & (rgba >> 16)) as u8,
@@ -109,19 +124,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                 (0xff & rgba) as u8,
             ],
         };
-        let x = (p.re.clone() - self.from.re.clone()).to_f64().unwrap();
-        let y = (p.im.clone() - self.from.im.clone()).to_f64().unwrap();
-        let x_zoom = self.x_zoom_factor();
-        let y_zoom = self.y_zoom_factor();
-
-        let x = (x * x_zoom) as u32;
-        let y = if self.height() >= (y * y_zoom) as u32 {
-            self.height() - (y * y_zoom) as u32
-        } else {
-            0
-        };
-
-
+        let (x, y) = self.get_coordinate(p);
         if x < self.buff.width() && y < self.buff.height() {
             //println!("x == {} y == {} {:?}", x, y, color);
             self.buff.put_pixel(x, y, color);
@@ -242,9 +245,32 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                     z = z * z + c;
                 }
                 let y = self.height() - y - 1;
-                let color = image::Rgba { data: [val, 0, 0, val] };
+                let color = Rgba { data: [val, 0, 0, val] };
                 self.buff.put_pixel(x, y, color);
             }
+        }
+    }
+    pub fn draw_axis(&mut self, rgba: u32) {
+        let (o_x, o_y) = self.get_coordinate(&Complex::new(T::zero(), T::zero()));
+        let color = Rgba {
+            data: [
+                (0xff & (rgba >> 24)) as u8,
+                (0xff & (rgba >> 16)) as u8,
+                (0xff & (rgba >> 8)) as u8,
+                (0xff & rgba) as u8,
+            ],
+        };
+        for x in 0..o_x {
+            self.buff.put_pixel(x, o_y, color);
+        }
+        for x in o_x..(self.width()) {
+            self.buff.put_pixel(x, o_y, color);
+        }
+        for y in 0..o_y {
+            self.buff.put_pixel(o_x, y, color);
+        }
+        for y in o_y..(self.width()) {
+            self.buff.put_pixel(o_x, y, color);
         }
     }
     pub fn save(&self, p: &Path) {
