@@ -130,7 +130,12 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             self.buff.put_pixel(x, y, color);
         }
     }
-    pub fn put_pixels(&mut self, v: &Vec<(Complex<T>, u32)>) {
+    pub fn put_pixels(&mut self, v: &Vec<Complex<T>>, rgba: u32) {
+        for ref z in v {
+            self.put_pixel(z, rgba);
+        }
+    }
+    pub fn draw_pixels(&mut self, v: &Vec<(Complex<T>, u32)>) {
         for &(ref z, ref rgb) in v {
             self.put_pixel(z, *rgb);
         }
@@ -141,6 +146,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         n: ComplexNode<T>,
         mut def: ComplexDefinition<T>,
         vari: &str,
+        rgba: u32,
     ) -> Result<Self, CalculationError> {
         let x_zoom = 1.0 / self.x_zoom_factor();
         let y_zoom = 1.0 / self.y_zoom_factor();
@@ -165,7 +171,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                 ));
                 def.define_numeric(vari, node);
                 let new = n.calculate(&def)?;
-                plane.put_dot(&new);
+                plane.put_pixel(&new, rgba);
             }
         }
         Ok(plane)
@@ -175,6 +181,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         n: ComplexNode<T>,
         mut def: ComplexDefinition<T>,
         vari: &str,
+        rgba: u32,
     ) -> Result<Self, CalculationError> {
         let mut vec = Vec::<Complex<T>>::new();
         let x_zoom = 1.0 / self.x_zoom_factor();
@@ -222,7 +229,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             to: max.clone(),
             buff: buff,
         };
-        plane.put_dots(&vec);
+        plane.put_pixels(&vec, rgba);
         Ok(plane)
     }
     pub fn draw_fractal(&mut self, c: Complex<T>) {
