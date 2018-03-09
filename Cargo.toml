@@ -1,5 +1,5 @@
 [package]
-name = "complex_plane"
+name = "scpl"
 version = "0.2.0"
 authors = ["leo-tom <ttnistomura@gmail.com>"]
 license = "GPL-3.0-or-later"
