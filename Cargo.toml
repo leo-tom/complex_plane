@@ -1,7 +1,8 @@
 [package]
-name = "complex"
+name = "complex_plane"
 version = "0.2.0"
 authors = ["leo-tom <ttnistomura@gmail.com>"]
+license = "GPL-3.0-or-later"
 
 [dependencies]
 image = "*"
