@@ -29,6 +29,7 @@ use std::u32;
 use std::path::Path;
 use std::iter::Iterator;
 use complex_func::CalculationError;
+use std::collections::HashMap;
 
 #[allow(dead_code)]
 pub struct ComplexPlane<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + PartialOrd> {
@@ -110,8 +111,8 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         let rgb = 0x000000ff as u32;
         self.put_pixel(p, rgb);
     }
-    pub fn put_dots(&mut self, v: &Vec<Complex<T>>) {
-        for z in v {
+    pub fn put_dots<I: Iterator<Item = Complex<T>>>(&mut self, it: I) {
+        for ref z in it {
             self.put_dot(z);
         }
     }
@@ -130,14 +131,14 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             self.buff.put_pixel(x, y, color);
         }
     }
-    pub fn put_pixels(&mut self, v: &Vec<Complex<T>>, rgba: u32) {
-        for ref z in v {
+    pub fn put_pixels<I: Iterator<Item = Complex<T>>>(&mut self, it: I, rgba: u32) {
+        for ref z in it {
             self.put_pixel(z, rgba);
         }
     }
-    pub fn draw_pixels(&mut self, v: &Vec<(Complex<T>, u32)>) {
-        for &(ref z, ref rgb) in v {
-            self.put_pixel(z, *rgb);
+    pub fn draw_pixels<I: Iterator<Item = (Complex<T>, u32)>>(&mut self, it: I) {
+        for (z, rgb) in it {
+            self.put_pixel(&z, rgb);
         }
     }
     pub fn map_to(
@@ -176,6 +177,16 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         }
         Ok(plane)
     }
+    pub fn map_from(
+        self,
+        plane: &Self,
+        n: ComplexNode<T>,
+        def: ComplexDefinition<T>,
+        vari: &str,
+        rgba: u32,
+    ) -> Result<Self, CalculationError> {
+        plane.map_to(self, n, def, vari, rgba)
+    }
     pub fn map(
         &self,
         n: ComplexNode<T>,
@@ -183,7 +194,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         vari: &str,
         rgba: u32,
     ) -> Result<Self, CalculationError> {
-        let mut vec = Vec::<Complex<T>>::new();
+        let mut map = HashMap::<(u32, u32), Complex<T>>::new();
         let x_zoom = 1.0 / self.x_zoom_factor();
         let y_zoom = 1.0 / self.y_zoom_factor();
         let from = Complex::new(
@@ -210,18 +221,18 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                 ));
                 def.define_numeric(vari, node);
                 let new = n.calculate(&def)?;
-                vec.push(new.clone());
                 if new.re > max.re {
                     max.re = new.re.clone();
                 } else if new.re < min.re {
                     min.re = new.re.clone();
                 }
+                let point = self.get_coordinate(&new);
+                map.insert(point, new.clone());
                 if new.im > max.im {
                     max.im = new.im;
                 } else if new.im < min.im {
                     min.im = new.im;
                 }
-
             }
         }
         let mut plane = ComplexPlane {
@@ -229,7 +240,17 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             to: max.clone(),
             buff: buff,
         };
-        plane.put_pixels(&vec, rgba);
+        let color = Rgba {
+            data: [
+                (0xff & (rgba >> 24)) as u8,
+                (0xff & (rgba >> 16)) as u8,
+                (0xff & (rgba >> 8)) as u8,
+                (0xff & rgba) as u8,
+            ],
+        };
+        for &(x, y) in map.keys() {
+            plane.buff.put_pixel(x, y, color);
+        }
         Ok(plane)
     }
     pub fn draw_fractal(&mut self, c: Complex<T>) {

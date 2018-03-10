@@ -48,7 +48,7 @@ mod tests {
         f.save(&path);
     }
 
-    #[test]
+    //#[test]
     fn func_test() {
         let formula = "real(3+i)";
         let start_parse_def = SystemTime::now();
@@ -105,6 +105,7 @@ mod tests {
             *ComplexNode::<f64>::parse("exp(x*i)").unwrap(),
             def,
             "x",
+            0x000000ff,
         ) {
             Ok(v) => v,
             Err(e) => panic!("{} : {}", e.description(), e),	
