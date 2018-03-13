@@ -1,12 +1,18 @@
 
-This is simple library to express complex plane in Rust.
+SCPL(Simple Complex Processing Library) is library to evaluate simple expression with complex numbers in Rust.
+It also has features to express complex plane which can be saved as image file.
 To compile it, do
 
+git clone git@github.com:leo-tom/complex_plane.git
 cd complex_plane
-cargo build
+cargo build --release
 
+or add
+scpl = { git = "https://github.com/leo-tom/complex_plane" , branch = "master"}
+at [dependencies] section of your Cargo.toml.
 
-You can ask me anything on my twitter account @Charcoal_gone
+HowTo.html can help you to learn how to use this library. Correct me if there is weird Engulishu inside of it...
+You can ask me of complain on my twitter account @Charcoal_gone or by mailing to coder.le0.1060@gmail.com.
 
-Enjoy!
+Enjoy!!
 

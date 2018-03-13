@@ -48,15 +48,16 @@ mod tests {
         f.save(&path);
     }
 
-    //#[test]
+    #[test]
     fn func_test() {
-        let formula = "real(3+i)";
+        //let formula = "(3+2i)*(3-2i)";
+        let formula = "1+2-3*4/5^6";
         let start_parse_def = SystemTime::now();
         let def = ComplexDefinition::default();
         match start_parse_def.elapsed() {
             Ok(x) => {
                 println!(
-                    "Parsing def took: {}ns,{}s",
+                    "ComplexDefinition::default() took: {}ns,{}s",
                     x.subsec_nanos(),
                     ((x.subsec_nanos() as f64) / 1000000000.0)
                 )
@@ -65,6 +66,7 @@ mod tests {
         }
         let start_parse = SystemTime::now();
         let parsed = ComplexNode::<f64>::parse(formula).expect("FUCK");
+        println!("{}", parsed);
         match start_parse.elapsed() {
             Ok(x) => {
                 println!(

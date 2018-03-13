@@ -30,8 +30,8 @@ use std::f64::consts;
 use complex_func::CalculationError;
 use std::sync::Arc;
 
-//#[derive(Clone)]
-enum ComplexValue<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
+
+enum ComplexValue<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + 'static> {
     // (vecter of name of arguments , definition of function as formula)
     Func(ComplexNode<T>, ComplexNode<T>),
     NaitiveFunc(
@@ -52,11 +52,11 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         }
     }
 }
-pub struct ComplexDefinition<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
+pub struct ComplexDefinition<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + 'static> {
     map: HashMap<String, ComplexValue<T>>,
 }
 
-impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone>
+impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + 'static>
     ComplexDefinition<T> {
     pub fn new() -> ComplexDefinition<T> {
         ComplexDefinition { map: HashMap::new() }
@@ -158,9 +158,6 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                 match x {
                     &ComplexValue::Value(ref v) => v.calculate(self),
                     &ComplexValue::Func(ref def_arg, ref f) => {
-                        if name == "REAL" {
-                            return Ok(Complex::new(arguments.calculate(self)?.re, T::zero()));
-                        }
                         let mut def = self.clone();
                         let vecter = arguments.get_vec();
                         let mut index = 0;
@@ -198,8 +195,9 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         ComplexDefinition { map: map }
     }
 }
-impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> fmt::Display
-    for ComplexDefinition<T> {
+impl<
+    T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone + 'static,
+> fmt::Display for ComplexDefinition<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut result: String = String::new();
         for kee in self.get_keys() {
@@ -241,17 +239,177 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         );
         let vec: Vec<(String, ComplexValue<T>)> = vec![_1, _2, _3];
         let mut def = ComplexDefinition { map: HashMap::<String, ComplexValue<T>>::from_iter(vec) };
-        def.define("REAL(x)", "REAL(x)");
-        def.define("real(x)", "REAL(x)");
+
+        def.define_naitive_function("real", Arc::from(real));
+        def.define_naitive_function("imag", Arc::from(imag));
+        def.define_naitive_function("acos", Arc::from(acos));
+        def.define_naitive_function("asin", Arc::from(asin));
+        def.define_naitive_function("atan", Arc::from(atan));
+        def.define_naitive_function("arg", Arc::from(arg));
+        def.define_naitive_function("ln", Arc::from(ln));
+        def.define_naitive_function("log", Arc::from(log));
         def.define("exp(x)", "e^x");
         def.define("cos(x)", "(1/2)*(exp(i*x)+exp(-i*x))");
         def.define("sin(x)", "(1/2i)*(exp(i*x)-exp(-i*x))");
         def.define("tan(x)", "sin(x)/cos(x)");
         def.define("sqrt(x)", "x^(1/2)");
         def.define("abs(x)", "sqrt(norm(x))");
-        def.define("imaginary(x)", "x - real(x)");
         def.define("norm(x)", "x*(real(x)-imaginary(x))");
+        def.define("to_radians(x)", "(x/180)*PI");
+        def.define("to_degrees(x)", "x*(180/PI)");
 
-        def
+        return def;
+        /*DEFINITION OF BUILT_IN_FUNCTION*/
+        fn real<
+            T: num::traits::Num
+                + num_traits::ToPrimitive
+                + num_traits::FromPrimitive
+                + Clone
+                + 'static,
+        >(
+            arg: ComplexNode<T>,
+            def: ComplexDefinition<T>,
+        ) -> Result<Complex<T>, CalculationError> {
+            Ok(Complex::from(arg.calculate(&def)?.re))
+        }
+        fn imag<
+            T: num::traits::Num
+                + num_traits::ToPrimitive
+                + num_traits::FromPrimitive
+                + Clone
+                + 'static,
+        >(
+            arg: ComplexNode<T>,
+            def: ComplexDefinition<T>,
+        ) -> Result<Complex<T>, CalculationError> {
+            Ok(Complex::new(T::zero(), arg.calculate(&def)?.im))
+        }
+        fn acos<
+            T: num::traits::Num
+                + num_traits::ToPrimitive
+                + num_traits::FromPrimitive
+                + Clone
+                + 'static,
+        >(
+            arg: ComplexNode<T>,
+            def: ComplexDefinition<T>,
+        ) -> Result<Complex<T>, CalculationError> {
+            let arg = arg.calculate(&def)?;
+            let float = Complex::new(arg.re.to_f64().unwrap(), arg.im.to_f64().unwrap());
+            let retval = float.acos();
+            let retval = Complex::new(
+                T::from_f64(retval.re).unwrap(),
+                T::from_f64(retval.im).unwrap(),
+            );
+            Ok(retval)
+        }
+        fn asin<
+            T: num::traits::Num
+                + num_traits::ToPrimitive
+                + num_traits::FromPrimitive
+                + Clone
+                + 'static,
+        >(
+            arg: ComplexNode<T>,
+            def: ComplexDefinition<T>,
+        ) -> Result<Complex<T>, CalculationError> {
+            let arg = arg.calculate(&def)?;
+            let float = Complex::new(arg.re.to_f64().unwrap(), arg.im.to_f64().unwrap());
+            let retval = float.asin();
+            let retval = Complex::new(
+                T::from_f64(retval.re).unwrap(),
+                T::from_f64(retval.im).unwrap(),
+            );
+            Ok(retval)
+        }
+        fn atan<
+            T: num::traits::Num
+                + num_traits::ToPrimitive
+                + num_traits::FromPrimitive
+                + Clone
+                + 'static,
+        >(
+            arg: ComplexNode<T>,
+            def: ComplexDefinition<T>,
+        ) -> Result<Complex<T>, CalculationError> {
+            let arg = arg.calculate(&def)?;
+            let float = Complex::new(arg.re.to_f64().unwrap(), arg.im.to_f64().unwrap());
+            let retval = float.atan();
+            let retval = Complex::new(
+                T::from_f64(retval.re).unwrap(),
+                T::from_f64(retval.im).unwrap(),
+            );
+            Ok(retval)
+        }
+        fn arg<
+            T: num::traits::Num
+                + num_traits::ToPrimitive
+                + num_traits::FromPrimitive
+                + Clone
+                + 'static,
+        >(
+            arg: ComplexNode<T>,
+            def: ComplexDefinition<T>,
+        ) -> Result<Complex<T>, CalculationError> {
+            let arg = arg.calculate(&def)?;
+            let float = Complex::new(arg.re.to_f64().unwrap(), arg.im.to_f64().unwrap());
+            let retval = float.arg();
+            let retval = Complex::new(T::from_f64(retval).unwrap(), T::zero());
+            Ok(retval)
+        }
+        fn ln<
+            T: num::traits::Num
+                + num_traits::ToPrimitive
+                + num_traits::FromPrimitive
+                + Clone
+                + 'static,
+        >(
+            arg: ComplexNode<T>,
+            def: ComplexDefinition<T>,
+        ) -> Result<Complex<T>, CalculationError> {
+            let arg = arg.calculate(&def)?;
+            let float = Complex::new(arg.re.to_f64().unwrap(), arg.im.to_f64().unwrap());
+            let retval = float.ln();
+            let retval = Complex::new(
+                T::from_f64(retval.re).unwrap(),
+                T::from_f64(retval.im).unwrap(),
+            );
+            Ok(retval)
+        }
+        fn log<
+            T: num::traits::Num
+                + num_traits::ToPrimitive
+                + num_traits::FromPrimitive
+                + Clone
+                + 'static,
+        >(
+            arg: ComplexNode<T>,
+            def: ComplexDefinition<T>,
+        ) -> Result<Complex<T>, CalculationError> {
+            /*log(base,self)*/
+            if !arg.is_vec() {
+                return Err(CalculationError::Unknown(
+                    "log function requires two variables. log(x,y) returns base-x logarithm of y."
+                        .to_owned(),
+                ));
+            }
+            let as_vec = arg.get_vec();
+            if as_vec.len() < 2 {
+                return Err(CalculationError::Unknown(
+                    "log function requires two variables. log(x,y) returns base-x logarithm of y."
+                        .to_owned(),
+                ));
+            }
+            let x = as_vec[1].calculate(&def)?;
+            let base = as_vec[0].calculate(&def)?;
+            let x = Complex::new(x.re.to_f64().unwrap(), x.im.to_f64().unwrap());
+            let base = Complex::new(base.re.to_f64().unwrap(), base.im.to_f64().unwrap());
+            let retval = x.log(base.re);
+            let retval = Complex::new(
+                T::from_f64(retval.re).unwrap(),
+                T::from_f64(retval.im).unwrap(),
+            );
+            Ok(retval)
+        }
     }
 }

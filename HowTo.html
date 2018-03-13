@@ -29,7 +29,7 @@ The struct scpl::complex_func::ComplexNode is used to Express formula on complex
 	<td>fromc(c: Complex&lt;T&gt;) -> Self</td>
 	<td>Makes new ComplexNode from num_complex::Complex<T></td>
 </tr>
-<tr>
+<tr id="parse">
 	<td>parse(s: &str) -> Option&lt;Box&lt;ComplexNode&lt;T&gt;&gt;&gt;</td>
 	<td>Parses given string slice and returns new ComplexNode wraped with Option and Box. Returns Option::None
 		 when parse failed. Read more at <a href="#Error_types">Error type</a> section.	
@@ -98,7 +98,7 @@ of variables and functions.
 </tr>
 <tr>
 	<td>define_naitive_function(&mut self,name: &str,f: Arc&lt;Fn(ComplexNode&lt;T&gt;, ComplexDefinition&lt;T&gt;) -> Result&lt;Complex&lt;T&gt;, CalculationError&gt;&gt;)</td>
-	<td>Defines new function natively. Using this function is not necessary fast.</td>
+	<td>Defines new function natively.</td>
 </tr>
 <tr>
 	<td>define_from_definition(&mut self, definitions: ComplexDefinition&lt;T&gt;)</td>
@@ -132,9 +132,10 @@ of variables and functions.
 </p>
 <p>
 ComplexDefinition::default() returns definition that have already defined few function and constants.
+Note that functions like cos(x),sin(x) takes arguments as radian. Functions like arg(x) and acos(x) returns values in radian.
 <table border=1>
 <tr>
-	<td>i</td><td>imaginary number</td>
+	<td>i</td><td>imaginary unit</td>
 </tr>
 <tr>
 	<td>e</td><td>Napier's constant</td>
@@ -142,19 +143,23 @@ ComplexDefinition::default() returns definition that have already defined few fu
 <tr>
 	<td>PI</td><td>3.1415...</td>
 </tr>
-<tr>
-	<td>real(x)</td><td>Get real number from complex</td>
-</tr>
-<tr>
-	<td>imaginary(x)</td><td>Get imaginary number from complex</td>
-</tr>
-<tr><td>exp(x)</td><td>e^x</td></tr>
-<tr><td>cos(x)</td><td>cos</td></tr>
-<tr><td>sin(x)</td><td>sin</td></tr>
-<tr><td>tan(x)</td><td>tan</td></tr>
-<tr><td>sqrt(x)</td><td>returns square root of x</td></tr>
-<tr><td>abs(x)</td><td>Returns |x|</td></tr>
-<tr><td>norm(x)</td><td>Returns norm of x</td></tr>
+<tr><td>real(x)</td><td>Get real part x.</td></tr>
+<tr><td>imag(x)</td><td>Get imaginary part x.</td></tr>
+<tr><td>exp(x)</td><td>e^x.</td></tr>
+<tr><td>cos(x)</td><td>Returns cosine.</td></tr>
+<tr><td>sin(x)</td><td>Returns sine.</td></tr>
+<tr><td>tan(x)</td><td>Returns tangent.</td></tr>
+<tr><td>sqrt(x)</td><td>Returns square root of x.</td></tr>
+<tr><td>abs(x)</td><td>Returns square root of norm(x).</td></tr>
+<tr><td>norm(x)</td><td>Returns norm of x.</td></tr>
+<tr><td>acos(x)</td><td>Arc cosine.</td></tr>
+<tr><td>asin(x)</td><td>Arc sine.</td></tr>
+<tr><td>atan(x)</td><td>Arc tangent.</td></tr>
+<tr><td>arg(x)</td><td>Argument of x.</td></tr>
+<tr><td>ln(x)</td><td>Returns natural logarithm of x.</td></tr>
+<tr><td>log(base,x)</td><td>Returns logarithm of x with base specified.</td></tr>
+<tr><td>to_degrees(x)</td><td>Convert radians to degrees.</td></tr>
+<tr><td>to_radians(x)</td><td>Convert degrees to radians.</td></tr>
 </table>
 </p>
 <h3>ComplexPlane</h3>
@@ -247,6 +252,42 @@ This library has its own error types. They all implements std::error::Error.
 	</tr>
 </table>
 </p>
+<h2>Writing expression</h2>
+<p>
+The initialization of ComplexNode from <a href="#parse">parse</a> is very simple. It is very useful when you want to
+evaluate expression dynamically. ComplexNode ofcourse can be used just to express real numbers. Name of variables
+and functions has to be made of alphabets or numbers 0 to 9. But, you cannot use numbers as first character of it.
+And you can write numbers like "123.456". For now, you CANNOT use scientific notation like "1.2e3".
+</p>
+<h3>Operators</h3>
+<p>
+You can operate on values using following operators! '+' and '-' has precedence which is lower than '*', '/' and '^'.
+Meaning expression
+<pre>
+1+2-3*4/5^6
+</pre>
+would be evaluated
+<pre>
+1+2-((3*4)/(5^6))
+</pre>
+<table border=1>
+<tr><td>Operator</td><td>Explanation</td><td>Example</td></tr>
+<tr><td>+</td><td>Add value</td><td>1+2+3i+4i be 3+7i</td></tr>
+<tr><td>-</td><td>Sub value</td><td>1-2+3i-4i be -1-i</td></tr>
+<tr><td>*</td><td>Multiplicate value</td><td>3*19 be 57</td></tr>
+<tr><td>/</td><td>Divide value</td><td>57/3 be 19</td></tr>
+<tr><td>^</td><td>Power of</td><td>2^8 be 256</td></tr>
+</table>
+</p>
+<h3>Functions</h3>
+<p>
+To call function named NAME with arguments (x,y,...,z). Do
+<pre>NAME(x,y,...,z)</pre>
+just like you would do in C.
+</p>
+<h3>Omitting '*'</h3>
+There is a <b>"bug"</b> which evaluate expression like "4i" as "4*i".
+This is bug. Do not write so. If you pass expression like "(2+i)(2-i)", it would NOT be evaluated as "(2+i)*(2-i)".
 <h2 id="Example">Example</h2>
 To compile following code, add
 <pre>
