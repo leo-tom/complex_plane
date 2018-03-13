@@ -273,7 +273,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                     z = z * z + c;
                 }
                 let y = self.height() - y - 1;
-                let color = Rgba { data: [val, 0, 0, val] };
+                let color = Rgba { data: [255, 0, 0, val] };
                 self.buff.put_pixel(x, y, color);
             }
         }

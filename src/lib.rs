@@ -37,7 +37,7 @@ mod tests {
     use std::time::SystemTime;
 
 
-    //#[test]
+    #[test]
     fn plane_test() {
         let z1 = Complex::new(0.0, 0.0);
         let z2 = Complex::new(0.4, 0.4);
@@ -48,7 +48,7 @@ mod tests {
         f.save(&path);
     }
 
-    #[test]
+    //#[test]
     fn func_test() {
         //let formula = "(3+2i)*(3-2i)";
         let formula = "1+2-3*4/5^6";
@@ -102,7 +102,7 @@ mod tests {
             800,
         );
         let to = ComplexPlane::new(&Complex::new(-1.0, -1.0), &Complex::new(1.0, 1.0), 400, 400);
-        let mapped = match from.map_to(
+        let mut mapped = match from.map_to(
             to,
             *ComplexNode::<f64>::parse("exp(x*i)").unwrap(),
             def,
@@ -123,6 +123,7 @@ mod tests {
             _ => panic!("WHAT"),
         }
         let path = Path::new("out.png");
+        mapped.draw_axis(0x4286f4ff);
         mapped.save(path);
     }
 }
