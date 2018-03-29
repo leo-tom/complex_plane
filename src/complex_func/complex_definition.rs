@@ -104,6 +104,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
                 );
             }
             _ => {
+                /*This is just a variable*/
                 self.map.insert(fname, ComplexValue::Value(*parsed_def));
             }
         }

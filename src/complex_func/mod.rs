@@ -64,6 +64,7 @@ impl Error for ParseError {
         "ParseError"
     }
 }
+#[derive(Debug)]
 enum ComplexNodeType<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
     Add,
     Sub,
@@ -74,6 +75,7 @@ enum ComplexNodeType<T: num::traits::Num + num_traits::ToPrimitive + num_traits:
     String(String),
     Vector(Vec<ComplexNode<T>>),
 }
+#[derive(Debug)]
 pub struct ComplexNode<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> {
     t: ComplexNodeType<T>,
     left: Option<Box<ComplexNode<T>>>,
@@ -504,7 +506,7 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
         }
         match ComplexNode::letters(s) {
             x @ Some(_) => return x,
-            None => (), 
+            None => (),
         }
 
         return Option::None;

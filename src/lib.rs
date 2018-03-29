@@ -21,7 +21,6 @@ pub mod complex_func;
 
 
 
-
 #[cfg(test)]
 
 mod tests {
@@ -62,7 +61,7 @@ mod tests {
                     ((x.subsec_nanos() as f64) / 1000000000.0)
                 )
             }
-            _ => panic!("WHAT"), 
+            _ => panic!("WHAT"),
         }
         let start_parse = SystemTime::now();
         let parsed = ComplexNode::<f64>::parse(formula).expect("FUCK");
@@ -75,12 +74,12 @@ mod tests {
                     ((x.subsec_nanos() as f64) / 1000000000.0)
                 )
             }
-            _ => panic!("WHAT"), 
+            _ => panic!("WHAT"),
         }
         let start_calculation = SystemTime::now();
         let calculated = match parsed.calculate(&def) {
             Ok(v) => v,
-            Err(e) => panic!("Error : {}", e),	
+            Err(e) => panic!("Error : {}", e),
         };
 
         match start_calculation.elapsed() {
@@ -110,7 +109,7 @@ mod tests {
             0x000000ff,
         ) {
             Ok(v) => v,
-            Err(e) => panic!("{} : {}", e.description(), e),	
+            Err(e) => panic!("{} : {}", e.description(), e),
         };
         match start_drawing.elapsed() {
             Ok(x) => {
