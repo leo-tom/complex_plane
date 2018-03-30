@@ -30,21 +30,21 @@ The struct scpl::complex_func::ComplexNode is used to Express formula on complex
 	<td>Makes new ComplexNode from num_complex::Complex<T></td>
 </tr>
 <tr id="parse">
-	<td>parse(s: &str) -> Option&lt;Box&lt;ComplexNode&lt;T&gt;&gt;&gt;</td>
+	<td>parse(s: &amp;str) -&gt; Option&lt;Box&lt;ComplexNode&lt;T&gt;&gt;&gt;</td>
 	<td>Parses given string slice and returns new ComplexNode wraped with Option and Box. Returns Option::None
-		 when parse failed. Read more at <a href="#Error_types">Error type</a> section.	
+		 when parse failed. Read more at <a href="#Error_types">Error type</a> section.
 	</td>
 </tr>
 <tr id="calculate">
-	<td>calculate(&self, definition: &ComplexDefinition&lt;T&gt;) -> Result&lt;Complex&lt;T&gt;, CalculationError&gt</td>
+	<td>calculate(&amp;self, definition: &amp;ComplexDefinition&lt;T&gt;) -&gt; Result&lt;Complex&lt;T&gt;, CalculationError&gt;</td>
 	<td>Calculate itself with given scpl::complex_func::complex_definition::ComplexDefinition.</td>
 </tr>
 <tr>
-	<td>to_string(&self) -> String</td>
+	<td>to_string(&amp;self) -&gt; String</td>
 	<td>Returns String express itself</td>
 </tr>
 <tr>
-	<td>get_name(&self) -> String</td>
+	<td>get_name(&amp;self) -&gt; String</td>
 	<td>Returns String express itself</td>
 </tr>
 </table>
@@ -59,12 +59,12 @@ This struct implements following traits.
 </tr>
 <tr>
 	<td>std::clone::Clone</td>
-	<td>clone(&self) -> Self</td>
+	<td>clone(&amp;self) -&gt; Self</td>
 	<td>Clones node.</td>
 </tr>
 <tr>
 	<td>std::fmt::Display</td>
-	<td>fmt(&self, f: &mut Formatter) -> Result</td>
+	<td>fmt(&amp;self, f: &amp;mut Formatter) -&gt; Result</td>
 	<td>Returns std::fmt::Result which shows you how formula is parsed. Used for debugging.</td>
 </tr>
 </table>
@@ -75,57 +75,57 @@ scpl::complex_func::complex_definition::ComplexDefinition is passed when <a href
 of variables and functions.
 <table border=1>
 <tr>
-	<td>default() -> Self</td>
+	<td>default() -&gt; Self</td>
 	<td>Use this function to get new instance of this Object.</td>
 </tr>
 <tr>
-	<td>new() -> ComplexDefinition&lt;T&gt;></td>
+	<td>new() -&gt; ComplexDefinition&lt;T&gt;></td>
 	<td>This function returns new instance of it. But, new instance made by it does not even contains definition of imaginary number
 		 i. Use default() instead.</td>
 </tr>
 <tr>
-	<td>define(&mut self, name: &str, def: &str)</td>
+	<td>define(&amp;mut self, name: &amp;str, def: &amp;str)</td>
 	<td>Defines new variable or function. If name is like "nameOfFunc(x,y,..,z)". It defines function.</td>
 </tr>
 <tr>
-	<td>define_numeric(&mut self, name: &str, value: ComplexNode&lt;T&gt;)</td>
+	<td>define_numeric(&amp;mut self, name: &amp;str, value: ComplexNode&lt;T&gt;)</td>
 	<td>Define new variable named "name".</td>
 </tr>
 <tr>
-	<td>define_function(&mut self, name: &str, var_def: ComplexNode&lt;T&gt;, def: ComplexNode&lt;T&gt;)</td>
+	<td>define_function(&amp;mut self, name: &amp;str, var_def: ComplexNode&lt;T&gt;, def: ComplexNode&lt;T&gt;)</td>
 	<td>Define function named "name", which takes arguments var_def which can be one variable or vector of variables.
 		 definition of function is given as def. </td>
 </tr>
 <tr>
-	<td>define_naitive_function(&mut self,name: &str,f: Arc&lt;Fn(ComplexNode&lt;T&gt;, ComplexDefinition&lt;T&gt;) -> Result&lt;Complex&lt;T&gt;, CalculationError&gt;&gt;)</td>
+	<td>define_naitive_function(&amp;mut self,name: &amp;str,f: Arc&lt;Fn(ComplexNode&lt;T&gt;, ComplexDefinition&lt;T&gt;) -&gt; Result&lt;Complex&lt;T&gt;, CalculationError&gt;&gt;)</td>
 	<td>Defines new function natively.</td>
 </tr>
 <tr>
-	<td>define_from_definition(&mut self, definitions: ComplexDefinition&lt;T&gt;)</td>
+	<td>define_from_definition(&amp;mut self, definitions: ComplexDefinition&lt;T&gt;)</td>
 	<td>Copy definition into itself.</td>
 </tr>
 <tr>
-	<td>remove(&mut self, name: &str)</td>
+	<td>remove(&amp;mut self, name: &amp;str)</td>
 	<td>Removes definition.</td>
 </tr>
 <tr>
-	<td>contains(&self, name: &str) -> bool</td>
+	<td>contains(&amp;self, name: &amp;str) -&gt; bool</td>
 	<td>Returns true if "name" is defined.</td>
 </tr>
 <tr>
-	<td>get(&self, name: &str) -> Result&lt;ComplexNode&lt;T&gt;, CalculationError&gt;</td>
+	<td>get(&amp;self, name: &amp;str) -&gt; Result&lt;ComplexNode&lt;T&gt;, CalculationError&gt;</td>
 	<td>Get definition of "name".</td>
 </tr>
 <tr>
-	<td>is_variable(&self, name: &str) -> bool</td>
+	<td>is_variable(&amp;self, name: &amp;str) -&gt; bool</td>
 	<td>Returns true if name is variable.</td>
 </tr>
 <tr>
-	<td>is_function(&self, name: &str) -> bool</td>
+	<td>is_function(&amp;self, name: &amp;str) -&gt; bool</td>
 	<td>Returns true if name is function.</td>
 </tr>
 <tr>
-	<td>clone(&self) -> Self</td>
+	<td>clone(&amp;self) -&gt; Self</td>
 	<td>Clone itself.</td>
 </tr>
 </table>
@@ -165,75 +165,75 @@ Note that functions like cos(x),sin(x) takes arguments as radian. Functions like
 <h3>ComplexPlane</h3>
 <p>
 scpl::complex_plane::ComplexPlane is used to express complex plane, and to express specific range on the complex field.
-You can call ComplexPlane::new(z1:&Complex,z2:&Complex,width:u32,height:u32) to make new instance. First 2 arguments are used
+You can call ComplexPlane::new(z1:&amp;Complex,z2:&amp;Complex,width:u32,height:u32) to make new instance. First 2 arguments are used
 to pass interval in complex field. In mathematics, it is often expressed like [z1,z2]. width and height is used when you call
 save() on this object created, to save this object as image file. And also used as factor for the fineness when map() is called.
 <table border=1>
 <tr>
-	<td>new new(z1: &Complex&lt;T&gt;, z2: &Complex&lt;T&gt;, w: u32, h: u32) -&gt; ComplexPlane&lt;T&gt;></td>
-	<td>Makes new instance. New object created would be interval [z1,z2]. w,h is used when 
+	<td>new new(z1: &amp;Complex&lt;T&gt;, z2: &amp;Complex&lt;T&gt;, w: u32, h: u32) -&gt; ComplexPlane&lt;T&gt;></td>
+	<td>Makes new instance. New object created would be interval [z1,z2]. w,h is used when
 	<a href="#ComplexPlane::save">save</a>, map and map_to is called.</td>
 </tr>
 <tr>
-	<td>width(&self) -> u32</td>
+	<td>width(&amp;self) -&gt; u32</td>
 	<td>Return width of this object.</td>
 </tr>
 <tr>
-	<td>height(&self) -> u32</td>
+	<td>height(&amp;self) -&gt; u32</td>
 	<td>Returns height of this object.</td>
 </tr>
 <tr>
-	<td>get_range(&self) -> (Complex&lt;T&gt;, Complex&lt;T&gt;)</td>
+	<td>get_range(&amp;self) -&gt; (Complex&lt;T&gt;, Complex&lt;T&gt;)</td>
 	<td>Returns tuple of Complex&lt;T&gt; expressing interval of this object.</td>
 </tr>
 <tr>
-	<td>put_dot(&mut self, p: &Complex&lt;T&gt;)</td>
-	<td>Puts black dot at the p on &self.</td>
+	<td>put_dot(&amp;mut self, p: &amp;Complex&lt;T&gt;)</td>
+	<td>Puts black dot at the p on &amp;self.</td>
 </tr>
 <tr>
-	<td>put_dots&lt;I: Iterator&lt;Item = Complex&lt;T&gt;&gt;&gt;(&mut self, it: I)</td>
+	<td>put_dots&lt;I: Iterator&lt;Item = Complex&lt;T&gt;&gt;&gt;(&amp;mut self, it: I)</td>
 	<td>Puts black dots in the Iterator given.</td>
 </tr>
 <tr>
-	<td>put_pixel(&mut self, p: &Complex&lt;T&gt;, rgba: u32)</td>
+	<td>put_pixel(&amp;mut self, p: &Complex&lt;T&gt;, rgba: u32)</td>
 	<td>Puts dot at p. with RGBA value given.</td>
 </tr>
 <tr>
-	<td>put_pixels&lt;I: Iterator&lt;Item = Complex&lt;T&gt;&gt;&gt;(&mut self, it: I, rgba: u32)</td>
+	<td>put_pixels&lt;I: Iterator&lt;Item = Complex&lt;T&gt;&gt;&gt;(&amp;mut self, it: I, rgba: u32)</td>
 	<td>Puts dots in the Iterater given with RGBA value.</td>
 </tr>
 <tr>
-	<td>draw_pixels&lt;I: Iterator&lt;Item = (Complex&lt;T&gt;, u32)&gt;&gt;(&mut self, it: I)</td>
+	<td>draw_pixels&lt;I: Iterator&lt;Item = (Complex&lt;T&gt;, u32)&gt;&gt;(&amp;mut self, it: I)</td>
 	<td>Puts each dots in given Iterator with RGBA value specified.</td>
 </tr>
 <tr id="map">
-	<td>map(&self,n: ComplexNode&lt;T&gt;,mut def: ComplexDefinition&lt;T&gt;,vari: &str,rgba:u32) -&gt; Result&lt;Self, CalculationError&gt;</td>
-	<td>Returns new ComplexPlane which is generated by mapping of given ComplexNode. Uses &self as interval of number variable 
+	<td>map(&amp;self,n: ComplexNode&lt;T&gt;,mut def: ComplexDefinition&lt;T&gt;,vari: &amp;str,rgba:u32) -&gt; Result&lt;Self, CalculationError&gt;</td>
+	<td>Returns new ComplexPlane which is generated by mapping of given ComplexNode. Uses &amp;self as interval of number variable
 		 specified by vari. I am too ESL to explain it with English, so See <a href="#Example">example</a>. </td>
 </tr>
 <tr id="map_to">
-	<td>map_to(&self,mut plane: Self,n: ComplexNode&lt;T&gt;,mut def: ComplexDefinition&lt;T&gt;,vari: &str,rgba: u32) -&gt; Result&lt;Self, CalculationError&gt;</td>
+	<td>map_to(&amp;self,mut plane: Self,n: ComplexNode&lt;T&gt;,mut def: ComplexDefinition&lt;T&gt;,vari: &amp;str,rgba: u32) -&gt; Result&lt;Self, CalculationError&gt;</td>
 	<td>Similar to <a href="#map">map</a>. Maps image where vari takes self as its interval on give plane. Returns result of it.
 		 Note that this method is faster than map.</td>
 </tr>
 <tr>
-	<td>map_from(self,plane: &Self,n: ComplexNode&lt;T&gt;,def: ComplexDefinition&lt;T&gt;,vari: &str,rgba: u32) -&gt; Result&lt;Self, CalculationError&gt;</td>
+	<td>map_from(self,plane: &amp;Self,n: ComplexNode&lt;T&gt;,def: ComplexDefinition&lt;T&gt;,vari: &str,rgba: u32) -&gt; Result&lt;Self, CalculationError&gt;</td>
 	<td>Similar to <a href="#map_to">map_to</a>. But it draws image on self using plane as interval of vari.</td>
 </tr>
 <tr>
-	<td>draw_fractal(&mut self, c: Complex&lt;T&gt;)</td>
+	<td>draw_fractal(&amp;mut self, c: Complex&lt;T&gt;)</td>
 	<td>Draws <a href="https://en.wikipedia.org/wiki/Mandelbrot_set">fractal</a> on this complex plane using c as a factor of it.</td>
 </tr>
 <tr>
-	<td>draw_axis(&mut self, rgba: u32)</td>
+	<td>draw_axis(&amp;mut self, rgba: u32)</td>
 	<td>Draws axis with color specified.</td>
 </tr>
 <tr id="ComplexPlane::save">
-	<td>save(&self, p: &Path)</td>
+	<td>save(&amp;self, p: &amp;Path)</td>
 	<td>Output itself to path specified with std::path::Path. Output file will be formatted according to its extension.</td>
 </tr>
 </table>
- 
+
 </p>
 <h2 id="Error_types">Error types</h2>
 <p>
@@ -245,9 +245,9 @@ This library has its own error types. They all implements std::error::Error.
 	</tr>
 	<tr>
 		<td>ParseError</td>
-		<td>For now, this library never uses this error type. It is because ComplexNode::parse never fails. 
-			Even if you give it weird &str like ":)" or "\(^O^)/ < Yay" ,
-			it simply returns Option::None or new ComplexNode which returns weird value when it is calculated.		
+		<td>For now, this library never uses this error type. It is because ComplexNode::parse never fails.
+			Even if you give it weird &amp;str like ":)" or "\(^O^)/ < Yay" ,
+			it simply returns Option::None or new ComplexNode which returns weird value when it is calculated.
 		</td>
 	</tr>
 </table>
@@ -309,8 +309,8 @@ use scpl::complex_func::complex_definition::ComplexDefinition;
 use std::path::Path;
 fn main() {
     let formula = "x"; //f(x) = x
-    let map_on = ComplexPlane::new(&Complex::new(-5.0, -5.0), &Complex::new(5.0, 5.0), 500, 500);
-    let range = ComplexPlane::new(&Complex::new(-2.5, -1.5), &Complex::new(3.0, 4.5), 350, 350);
+    let map_on = ComplexPlane::new(&amp;Complex::new(-5.0, -5.0), &amp;Complex::new(5.0, 5.0), 500, 500);
+    let range = ComplexPlane::new(&amp;Complex::new(-2.5, -1.5), &amp;Complex::new(3.0, 4.5), 350, 350);
     //calculate f(x) = x.
     let mut calculated = range
         .map_to(
@@ -334,12 +334,12 @@ This code draws exp(xi) where 0 < x < 2*PI.
 <pre>
 //Boring code like "use blah::blah::Blah" is ommitted.
 let from = ComplexPlane::new(
-	&Complex::new(0.0, 0.0),
-   &Complex::new(2.0 * PI, 0.0),
+	&amp;Complex::new(0.0, 0.0),
+   &amp;Complex::new(2.0 * PI, 0.0),
    800,
    800,
 );
-let to = ComplexPlane::new(&Complex::new(-1.0, -1.0), &Complex::new(1.0, 1.0), 400, 400);
+let to = ComplexPlane::new(&amp;Complex::new(-1.0, -1.0), &amp;Complex::new(1.0, 1.0), 400, 400);
 let mapped = match from.map_to(
    to,
    *ComplexNode::<f64>::parse("exp(x*i)").unwrap(),
@@ -348,7 +348,7 @@ let mapped = match from.map_to(
    0x000000ff,
 ) {
    Ok(v) => v,
-   Err(e) => panic!("{} : {}", e.description(), e),	
+   Err(e) => panic!("{} : {}", e.description(), e),
 };
 let path = Path::new("out.png");
 mapped.save(path);
@@ -361,10 +361,10 @@ Just try executing it! Very beautiful!
 let z1 = Complex::new(0.0, 0.0);
 let z2 = Complex::new(0.4, 0.4);
 let c = Complex::new(-0.4051234123, 0.60124312);
-let mut f = ComplexPlane::new(&z1, &z2, 500, 500);
+let mut f = ComplexPlane::new(&amp;z1, &amp;z2, 500, 500);
 f.draw_fractal(c);
 let path = Path::new("out.png");
-f.save(&path);
+f.save(&amp;path);
 </pre>
 </body>
-</html> 
+</html>

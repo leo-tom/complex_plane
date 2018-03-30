@@ -182,6 +182,49 @@ impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive +
             }
         }
     }
+    pub fn to_hstring(&self) -> String {
+        let retval = match self.left {
+            Some(ref x) => x.to_hstring(),
+            None => String::new(),
+        };
+        let mut retval = if ! retval.is_empty() {
+            format!("({})",retval)
+        }else{
+            retval
+        };
+        let me = match self.t {
+            ComplexNodeType::Add => String::from("+"),
+            ComplexNodeType::Sub => String::from("-"),
+            ComplexNodeType::Mul => String::from("*"),
+            ComplexNodeType::Div => String::from("/"),
+            ComplexNodeType::Pow => String::from("^"),
+            ComplexNodeType::Scalar(ref x) => x.re.to_f64().unwrap().to_string(),
+            ComplexNodeType::String(ref x) => x.clone(),
+            ComplexNodeType::Vector(ref x) => {
+                let mut s = String::new();
+                s.push('(');
+                for v in x {
+                    s.push_str(&v.to_hstring());
+                    s.push(',');
+                }
+                s.pop();
+                s.push(')');
+                s
+            }
+        };
+        retval.push_str(&me);
+        let right = match self.right {
+            Some(ref x) => x.to_hstring(),
+            None => String::new(),
+        };
+        let right = if right.is_empty() {
+            right
+        }else{
+            format!("({})",right)
+        };
+        retval.push_str(&right);
+        retval
+    }
 }
 impl<T: num::traits::Num + num_traits::ToPrimitive + num_traits::FromPrimitive + Clone> fmt::Display
     for ComplexNode<T> {

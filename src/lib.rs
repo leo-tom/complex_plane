@@ -36,7 +36,7 @@ mod tests {
     use std::time::SystemTime;
 
 
-    #[test]
+    //#[test]
     fn plane_test() {
         let z1 = Complex::new(0.0, 0.0);
         let z2 = Complex::new(0.4, 0.4);
@@ -47,7 +47,7 @@ mod tests {
         f.save(&path);
     }
 
-    //#[test]
+    #[test]
     fn func_test() {
         //let formula = "(3+2i)*(3-2i)";
         let formula = "1+2-3*4/5^6";
@@ -64,8 +64,8 @@ mod tests {
             _ => panic!("WHAT"),
         }
         let start_parse = SystemTime::now();
-        let parsed = ComplexNode::<f64>::parse(formula).expect("FUCK");
-        println!("{}", parsed);
+        let parsed = ComplexNode::<f64>::parse(formula).unwrap();
+        println!("{}", parsed.to_hstring());
         match start_parse.elapsed() {
             Ok(x) => {
                 println!(
